@@ -19,14 +19,16 @@ Se juega en el navegador, en PC o en el celular, sin instalar nada.
 | Saltar | Espacio | Botón **Saltar** |
 | Dash | Shift | Botón **Dash** |
 | Primera / tercera persona | V | Botón **Vista** |
+| Pulso (infectados) | E | Botón **Pulso** |
 
 ## Qué tiene
 
 - **4 modos de juego** (los elige el anfitrión en la sala de espera):
-  - *Clásico*: quien la lleva cuando acaba el tiempo pierde.
-  - *Infección*: a quien tocan también caza; ganan los que sobreviven.
-  - *Equipos*: Rojo contra Azul, un equipo caza y el otro huye; cada ronda cambian.
-  - *Congelados*: tocar congela y un compañero libre te descongela.
+  - *Clásico*: quien la lleva carga una bomba que se acelera en los últimos 30 s; si la tienes al final, explota.
+  - *Infección*: a quien tocan se infecta y caza; los infectados tienen un pulso (tecla E) que frena a los cercanos.
+  - *Equipos*: Rojo contra Azul; los atrapados van a la cárcel en Seguridad y su equipo los libera pisando la placa.
+  - *Congelados*: tocar congela; hay que quedarse junto a un compañero para descongelarlo, o el hielo se derrite a los 20 s.
+- **Ayudas en pantalla**: explicación del modo al empezar, flechas hacia el cazador, tu presa, compañeros congelados o la cárcel, contador de libres y aviso rojo cuando el cazador está cerca.
 - **Niveles y desbloqueos**: ganas experiencia por jugar, ganar, tocar, rescatar y recoger orbes. Subiendo de nivel se desbloquean colores (incluido Arcoíris), gorros (Orejas, Copa, Vikingo, Hélice) y estelas (Fuego, Hielo, Oro, Arcoíris).
 - **Bots con dificultad** fácil, normal o difícil.
 - **Música generada** que cambia en la sala de espera, la partida y los últimos 30 segundos, y efectos de sonido para cada acción.

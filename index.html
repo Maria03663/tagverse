@@ -379,6 +379,25 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 .xp-head { font-weight: 700; color: var(--gold); }
 .xp-det { font-size: 12.5px; color: var(--muted); }
 
+/* ---------- Claridad de los modos ---------- */
+#danger { position: absolute; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at center, transparent 52%, rgba(255, 40, 90, 0.6) 100%); transition: opacity 0.15s linear; }
+#arrows { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.tv-arrow { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.tv-arrow i { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; display: block; }
+.tv-arrow i::before { content: ''; position: absolute; left: 4px; top: 4px; border-left: 22px solid currentColor; border-top: 10px solid transparent; border-bottom: 10px solid transparent; filter: drop-shadow(0 0 6px currentColor); }
+.tv-arrow span { position: absolute; left: -60px; top: 16px; width: 120px; text-align: center; font-size: 11.5px; font-weight: 700; color: var(--ink); text-shadow: 0 1px 3px #000; white-space: nowrap; }
+.tv-arrow.threat { color: #ff3d6a; } .tv-arrow.target { color: #ff9ad0; } .tv-arrow.ally { color: #35e0ff; }
+#counter { margin-top: 4px; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+#counter b { font-family: var(--display); font-weight: 400; font-size: 30px; line-height: 1; color: var(--run); text-shadow: 0 0 12px rgba(53, 224, 255, 0.6); }
+#counter span { font-size: 12.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#intro { position: absolute; left: 50%; top: 36%; transform: translate(-50%, -50%); width: min(460px, 90vw); text-align: center; background: var(--glass-hi); border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px; pointer-events: none; }
+#intro .in-kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+#intro .in-role { font-family: var(--display); font-size: clamp(24px, 5vw, 36px); line-height: 1.1; color: var(--run); margin: 6px 0 8px; }
+#intro .in-role.hot { color: var(--it); }
+#intro .in-rules { margin: 0; padding: 0; list-style: none; font-size: 14px; line-height: 1.45; color: var(--ink); display: flex; flex-direction: column; gap: 3px; }
+#btnAbility { width: 70px; height: 70px; font-size: 13px; right: calc(128px + var(--safe-r)); bottom: calc(104px + var(--safe-b)); border-color: rgba(109, 255, 122, 0.8); }
+@media (prefers-reduced-motion: reduce) { #intro { animation: none; } }
+
 #boot {
   position: absolute; inset: 0; z-index: 30; display: grid; place-items: center;
   background: var(--void); font-family: var(--display); font-size: 20px; color: var(--muted);
@@ -407,9 +426,17 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     <div class="joy-hint" id="joyHint">Toca aquí para moverte</div>
     <button id="btnDash" class="tbtn" type="button">Dash<span id="dashPips"></span></button>
     <button id="btnJump" class="tbtn" type="button">Saltar</button>
+    <button id="btnAbility" class="tbtn" type="button" hidden>Pulso</button>
   </div>
 
   <div id="hud" hidden>
+    <div id="danger" aria-hidden="true"></div>
+    <div id="arrows" aria-hidden="true"></div>
+    <div id="intro" hidden>
+      <div class="in-kicker"></div>
+      <div class="in-role"></div>
+      <ul class="in-rules"></ul>
+    </div>
     <div class="hud-top">
       <div class="hud-left">
         <button id="btnLeave" class="chip-btn" type="button">Salir</button>
@@ -420,6 +447,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         <div id="timer">--:--</div>
         <div id="status">Preparando…</div>
         <div id="roomName"></div>
+        <div id="counter" hidden><b></b><span></span></div>
       </div>
       <div class="hud-side">
         <div class="hud-right">
@@ -632,10 +660,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   const IT_HEX = 0xff3d9a;
   // Modos de juego
   const MODES = [
-    { id: 'cl', name: 'Clásico', desc: 'Una persona la lleva. Quien la tenga cuando acabe el tiempo pierde.' },
-    { id: 'in', name: 'Infección', desc: 'A quien tocan también caza. Ganan los que sobrevivan hasta el final.' },
-    { id: 'eq', name: 'Equipos', desc: 'Rojo contra Azul: un equipo caza y el otro huye. Cada ronda cambian los papeles.' },
-    { id: 'co', name: 'Congelados', desc: 'Tocar congela. Un compañero libre te descongela al tocarte. Ganan si nadie queda libre… o si aguantan.' },
+    { id: 'cl', name: 'Clásico', desc: 'Quien la lleva carga una bomba. En los últimos 30 s se acelera; si la tienes cuando llega a cero, explota.' },
+    { id: 'in', name: 'Infección', desc: 'A quien tocan se infecta y caza. Los infectados tienen un pulso que frena a los cercanos. Ganan los que sigan sanos.' },
+    { id: 'eq', name: 'Equipos', desc: 'Rojo contra Azul. A quien atrapan va a la cárcel en Seguridad; pisa la placa para liberar a tu equipo. Cada ronda cambian los papeles.' },
+    { id: 'co', name: 'Congelados', desc: 'Tocar congela. Quédate junto a un compañero para descongelarlo; si no, el hielo se derrite a los 20 s.' },
   ];
   const TEAM_COLORS = ['#ff5a6e', '#4da3ff'], TEAM_NAMES = ['Rojo', 'Azul'];
   // Dificultad de los bots: velocidad, tiempo de reacción, uso del dash, saltos y cuánto anticipan tu movimiento
@@ -649,6 +677,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   const RAINBOW = 11;
   const TRAILS = ['Normal', 'Fuego', 'Hielo', 'Oro', 'Arcoíris'];
   const needXp = (lv) => 80 + 40 * (lv - 1);
+  // Mecánicas de los modos
+  const JAIL = { plate: { x: -24, z: -22 }, spots: [[-30.5, -20], [-30.5, -24.5], [-17.5, -20], [-17.5, -24.5], [-27, -18.2], [-21, -18.2], [-27.5, -26], [-20.5, -26]].map(([x, z]) => ({ x, y: 0, z })) };
+  const PULSE = { cd: 10000, r: 5, slow: 1800 };
+  const THAW_MS = 20000, RESCUE_MS = 1200;
   function levelOf(xp) { let lv = 1, rest = xp; while (rest >= needXp(lv) && lv < 99) { rest -= needXp(lv); lv++; } return { lv, rest, need: needXp(lv) }; }
 
   // ================================================================
@@ -993,6 +1025,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
           if (m.color) m.color.convertLinearToSRGB();
           if (m.emissive) m.emissive.convertLinearToSRGB();
           const n = m.name || '';
+          if (n === 'TableTop') m.color.multiplyScalar(0.7);
           if (n.startsWith('Floor_')) { m.map = tileTex; m.color.multiplyScalar(n === 'Floor_lab' || n === 'Floor_cafe' ? 0.64 : 0.78); m.needsUpdate = true; }
           else if (n === 'Window') { m.color.setHex(0x000000); m.emissive.setHex(0xffffff); m.emissiveMap = starTex; m.needsUpdate = true; }
           else if (n.startsWith('Sign_')) {
@@ -1649,6 +1682,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     jump() { this.tone(300, 620, 0.12, 'triangle', 0.06); },
     land(v) { this.tone(140, 60, 0.12, 'sine', 0.18 * v); this.noise1(0.08, 0.08 * v, 'lowpass', 700, 1); },
     dash() { this.noise1(0.3, 0.22, 'bandpass', 2500, 0.9); this.tone(500, 1400, 0.18, 'sawtooth', 0.04); },
+    boom() { this.noise1(1.2, 0.6, 'lowpass', 600, 0.7); this.tone(90, 30, 1.0, 'sine', 0.5); this.tone(60, 25, 1.2, 'triangle', 0.3, 0.05); },
+    tick(hot) { this.tone(hot ? 1500 : 1100, hot ? 1500 : 1100, 0.05, 'square', hot ? 0.07 : 0.04); },
+    pulse() { this.tone(120, 600, 0.35, 'sine', 0.2); this.noise1(0.4, 0.15, 'bandpass', 900, 1.5); this.tone(240, 80, 0.4, 'sawtooth', 0.06, 0.05); },
     thump(v) { this.tone(72, 40, 0.18, 'sine', 0.45 * v); this.tone(62, 38, 0.16, 'sine', 0.3 * v, 0.24); },
     setHum(level) { if (this.humGain) this.humGain.gain.setTargetAtTime(this.muted ? 0 : level, this.ctx.currentTime, 0.12); },
     setMuted(m) { this.muted = m; if (this.out) this.out.gain.value = m ? 0 : 0.9; if (m) this.setHum(0); },
@@ -1734,7 +1770,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const s = { ph: 'w', phEnd: t, it: '', r: 0, los: '', roundMs, hn: look.name, orbs: [], orbSeq: 0, fx: [], sh: new Map(),
       tp: [], tpSeq: 0, mu: 0, mutUntil: [0, 0, 0, 0], mutCd: [0, 0, 0, 0], pts: new Map(), ev: [], evSeq: 0,
       imm: new Map(), tagCd: new Map(), nextOrb: 0, nextDir: 0, lastTagTime: t, bots: [],
-      md: opts.mode, df: opts.diff, hz: new Set(), fz: new Map(), tm: new Map(), ht: 0, ts: [0, 0], win: [], wr: '', first: '' };
+      md: opts.mode, df: opts.diff, hz: new Set(), fz: new Map(), tm: new Map(), ht: 0, ts: [0, 0], win: [], wr: '', first: '',
+      fzT: new Map(), rp: new Map(), sl: new Map(), pcd: new Map(), abSeen: new Map(), jailCd: 0 };
     for (let i = 0; i < botCount; i++) s.bots.push(newBot(i));
     return s;
   }
@@ -1742,7 +1779,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const imm = []; for (const [id, until] of s.imm) if (until > t) imm.push([id, Math.round(until - t)]);
     return {
       ph: s.ph, rem: Math.max(0, Math.round(s.phEnd - t)), it: s.it, r: s.r, los: s.los, hn: s.hn.slice(0, 12), rm: s.roundMs,
-      md: s.md, df: s.df, hz: [...s.hz], fz: [...s.fz], tm: [...s.tm], ht: s.ht, ts: s.ts, wn: s.win, wr: s.wr,
+      md: s.md, df: s.df, hz: [...s.hz], fz: [...s.fz], tm: [...s.tm], ht: s.ht, ts: s.ts, wn: s.win, wr: s.wr, fi: s.first,
+      ft: [...s.fzT].map(([id, at]) => [id, Math.max(0, Math.round(at - t))]),
+      rp: [...s.rp].filter((e) => e[1] > 0.02).map(([id, v]) => [id, r2(v)]),
+      sl: [...s.sl].filter((e) => e[1] > t).map(([id, at]) => [id, Math.round(at - t)]),
+      pc: [...s.pcd].filter((e) => e[1] > t).map(([id, at]) => [id, Math.round(at - t)]),
       o: s.orbs.map((o) => [o.id, o.k, r2(o.x), r2(o.y), r2(o.z)]),
       f: s.fx.map((f) => [f.id, f.k, Math.max(0, Math.round(f.end - t))]),
       sh: [...s.sh].filter((e) => e[1] > 0),
@@ -1764,6 +1805,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     s.tm = new Map((g.tm || []).map((e) => [String(e[0]), num(e[1]) ? 1 : 0]));
     s.ht = num(g.ht) ? 1 : 0; s.ts = Array.isArray(g.ts) ? [num(g.ts[0]), num(g.ts[1])] : [0, 0];
     s.win = Array.isArray(g.wn) ? g.wn.map(String) : []; s.wr = typeof g.wr === 'string' ? g.wr : '';
+    s.first = typeof g.fi === 'string' ? g.fi : '';
+    s.fzT = new Map((g.ft || []).map((e) => [String(e[0]), t + num(e[1])]));
+    s.rp = new Map((g.rp || []).map((e) => [String(e[0]), num(e[1])]));
+    s.sl = new Map((g.sl || []).map((e) => [String(e[0]), t + num(e[1])]));
+    s.pcd = new Map((g.pc || []).map((e) => [String(e[0]), t + num(e[1])]));
     s.orbs = (g.o || []).map((o) => ({ id: num(o[0]), k: clamp(num(o[1]) | 0, 0, PU.length - 1), x: num(o[2]), y: num(o[3]), z: num(o[4]) }));
     s.orbSeq = s.orbs.reduce((m, o) => Math.max(m, o.id), 0) + 100;
     s.fx = (g.f || []).map((f) => ({ id: String(f[0]), k: clamp(num(f[1]) | 0, 0, PU.length - 1), end: t + num(f[2]) - ageMs }));
@@ -1792,7 +1838,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         if (p.isMe && p.sameTab) continue;
         const a = p.presence.p;
         if (!Array.isArray(a)) continue;
-        ents.push({ id: p.peer, x: clamp(num(a[0]), -LIMIT, LIMIT), y: clamp(num(a[1]), 0, 30), z: clamp(num(a[2]), -LIMIT, LIMIT), bot: null, pk: p.presence.pk });
+        ents.push({ id: p.peer, x: clamp(num(a[0]), -LIMIT, LIMIT), y: clamp(num(a[1]), 0, 30), z: clamp(num(a[2]), -LIMIT, LIMIT), bot: null, pk: p.presence.pk, ab: p.presence.ab });
       }
     }
     for (const b of S.bots) ents.push({ id: b.id, x: b.body.x, y: b.body.y, z: b.body.z, bot: b });
@@ -1806,6 +1852,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   function clearRoundStuff() {
     S.fx = []; S.sh.clear(); S.orbs = []; S.mu = 0; S.mutUntil = [0, 0, 0, 0];
     S.hz.clear(); S.fz.clear(); S.imm.clear(); S.tagCd.clear(); S.it = '';
+    S.fzT.clear(); S.rp.clear(); S.sl.clear(); S.pcd.clear();
   }
   const addPts = (id, n) => { S.pts.set(id, (S.pts.get(id) || 0) + n); };
 
@@ -1825,7 +1872,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     }
   }
   function startRound(ents, t) {
-    S.r++; clearRoundStuff(); S.win = []; S.wr = ''; S.los = ''; S.first = ''; S.lastFree = '';
+    S.r++; clearRoundStuff(); S.win = []; S.wr = ''; S.los = ''; S.first = ''; S.lastFree = ''; S.jailCd = 0;
     S.lastTagTime = t; S.nextOrb = t + 1500; S.nextDir = t + 6000;
     const ids = ents.map((e) => e.id);
     if (S.md === 'cl') { S.it = pick(ids); S.hz.add(S.it); }
@@ -1892,7 +1939,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
           hostEvent(1, nh, '');
         } else if (t >= S.phEnd) endRound(ents, t, 'time');
         else if (S.md !== 'cl' && !free.length) endRound(ents, t, 'all');
-        else hostGameplay(ents, t);
+        else hostGameplay(ents, t, dt);
       }
     } else if (S.ph === 'o') {
       if (t >= S.phEnd) { if (n >= 2) setPhase('c', CFG.countdown, t); else toLobby(t, ents); }
@@ -1939,7 +1986,25 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     if (n >= 2) setPhase('c', CFG.countdown, t); else toLobby(t, ents);
   }
 
-  function hostGameplay(ents, t) {
+  // Infección: pulso que ralentiza a quien esté cerca del infectado
+  function doPulse(id, ents, t) {
+    if (!S || S.ph !== 'p' || S.md !== 'in' || !S.hz.has(id) || (S.pcd.get(id) || 0) > t) return;
+    const h = ents.find((e) => e.id === id); if (!h) return;
+    S.pcd.set(id, t + PULSE.cd);
+    let n = 0;
+    for (const e of ents) {
+      if (S.hz.has(e.id) || Math.hypot(e.x - h.x, e.z - h.z) > PULSE.r) continue;
+      S.sl.set(e.id, t + PULSE.slow); n++;
+    }
+    hostEvent(13, id, n);
+  }
+  function hostGameplay(ents, t, dt) {
+    // Peticiones de habilidad de los clientes (Infección)
+    for (const e of ents) {
+      if (e.bot || !Array.isArray(e.ab) && typeof e.ab !== 'number') continue;
+      const seq = num(e.ab);
+      if (seq > (S.abSeen.get(e.id) || 0)) { S.abSeen.set(e.id, seq); doPulse(e.id, ents, t); }
+    }
     S.fx = S.fx.filter((f) => f.end > t);
     const near = (a, b, d) => Math.hypot(a.x - b.x, a.z - b.z) < d && Math.abs(a.y - b.y) < 1.6;
     const immune = (id) => (S.imm.get(id) || 0) > t;
@@ -1965,25 +2030,46 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
           if (!left.length) S.lastFree = e.id;
           hostEvent(9, e.id, h.id);
         } else if (S.md === 'co') {
-          S.fz.set(e.id, 1); addPts(h.id, 1);
+          S.fz.set(e.id, 1); S.fzT.set(e.id, t + THAW_MS); S.rp.delete(e.id); addPts(h.id, 1);
           hostEvent(10, e.id, h.id);
         } else if (S.md === 'eq') {
+          // a la cárcel (Seguridad)
+          const jailedN = [...S.fz.values()].filter((v) => v === 2).length;
           S.fz.set(e.id, 2); addPts(h.id, 1); S.ts[S.ht] += 1;
+          teleportEntity(e, JAIL.spots[jailedN % JAIL.spots.length], t);
           hostEvent(11, e.id, h.id);
         }
         break;
       }
     }
-    // Congelados: un compañero libre descongela al tocar
+    // Congelados: hay que quedarse junto al compañero un momento para descongelarlo; si no, el hielo se derrite solo
     if (S.md === 'co') {
+      for (const f of ents) {
+        if (S.fz.get(f.id) !== 1) continue;
+        let rescuer = null;
+        for (const r of ents) { if (!S.hz.has(r.id) && !S.fz.get(r.id) && near(r, f, 1.7)) { rescuer = r; break; } }
+        let p = S.rp.get(f.id) || 0;
+        p = rescuer ? p + dt * 1000 / RESCUE_MS : Math.max(0, p - dt * 0.6);
+        if (p >= 1 || (S.fzT.get(f.id) || 0) <= t) {
+          S.fz.delete(f.id); S.fzT.delete(f.id); S.rp.delete(f.id); S.imm.set(f.id, t + 2000);
+          if (p >= 1 && rescuer) { addPts(rescuer.id, 2); hostEvent(12, f.id, rescuer.id); } else hostEvent(12, f.id, '');
+        } else S.rp.set(f.id, p);
+      }
+    }
+    // Equipos: pisar la placa de la cárcel libera a todo tu equipo
+    if (S.md === 'eq' && t > S.jailCd) {
       for (const r of ents) {
-        if (S.hz.has(r.id) || S.fz.get(r.id)) continue;
-        for (const f of ents) {
-          if (S.fz.get(f.id) !== 1 || !near(r, f, 1.5)) continue;
-          S.fz.delete(f.id); S.imm.set(f.id, t + 2000); addPts(r.id, 2);
-          hostEvent(12, f.id, r.id);
-          break;
+        if (S.hz.has(r.id) || S.fz.get(r.id) || Math.hypot(r.x - JAIL.plate.x, r.z - JAIL.plate.z) > 1.4) continue;
+        const tm = S.tm.get(r.id), freed = ents.filter((e) => S.fz.get(e.id) === 2 && S.tm.get(e.id) === tm);
+        if (!freed.length) continue;
+        for (const e of freed) {
+          S.fz.delete(e.id); S.imm.set(e.id, t + 2500);
+          const far = SPAWNS.filter((p) => Math.hypot(p.x - JAIL.plate.x, p.z - JAIL.plate.z) > 14);
+          teleportEntity(e, pick(far.length ? far : SPAWNS), t);
         }
+        addPts(r.id, 2 * freed.length); S.jailCd = t + 3000;
+        hostEvent(14, r.id, freed.length);
+        break;
       }
     }
 
@@ -2142,6 +2228,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         const lead = D.predict * Math.min(1.2, d / 8);
         tx = prey.x + v.vx * lead; tz = prey.z + v.vz * lead;
         if (prey.y - s.y > 0.8 && s.grounded && d < 5 && Math.random() < 0.08 * D.jump) tryJump(s, mods, t);
+        if (S.md === 'in' && d < 4.5 && (S.pcd.get(b.id) || 0) < t && Math.random() < 0.02 + 0.06 * D.jump) doPulse(b.id, ents, t);
         if (d < 7 && areaAt(s.x, s.z) === areaAt(prey.x, prey.z) && mods.dash > 0 && t > b.nextDash && Math.random() < D.dash) { tryDash(s, mods); b.nextDash = t + 1500; }
         if (t > b.nextDash && Math.random() >= D.dash) b.nextDash = t + 1500;
       }
@@ -2151,6 +2238,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       for (const e of ents) if (S.hz.has(e.id) && !S.fz.get(e.id)) { const d = Math.hypot(e.x - s.x, e.z - s.z); if (d < td) { td = d; th = e; } }
       b.fleeing = th && (b.fleeing ? td < 22 : td < 15);
       const rescue = S.md === 'co' ? ents.filter((e) => S.fz.get(e.id) === 1) : [];
+      const jailMates = S.md === 'eq' ? ents.filter((e) => S.fz.get(e.id) === 2 && S.tm.get(e.id) === S.tm.get(b.id)).length : 0;
       if (b.fleeing) {
         const score = (c) => Math.hypot(c.x - th.x, c.z - th.z) - 0.7 * Math.hypot(c.x - s.x, c.z - s.z);
         if (!b.fl || t > b.flAt || Math.hypot(b.fl.x - s.x, b.fl.z - s.z) < 2.5) {
@@ -2161,6 +2249,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         }
         tx = b.fl.x; tz = b.fl.z;
         if (td < 4 && mods.dash > 0 && t > b.nextDash && Math.random() < D.dash) { tryDash(s, mods); b.nextDash = t + 1500; }
+      } else if (jailMates && (!th || td > 9)) {
+        tx = JAIL.plate.x; tz = JAIL.plate.z;     // ir a la placa de la cárcel a liberar al equipo
       } else if (rescue.length) {
         // Congelados: ir a descongelar al compañero más cercano
         let best = null, bd = 1e9;
@@ -2237,13 +2327,16 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   function shieldOf(id) { if (!G || !Array.isArray(G.sh)) return 0; const e = G.sh.find((x) => x[0] === id); return e ? num(e[1]) : 0; }
   // Estado de la ronda visto por todos: cazadores, congelados, equipos y puntos
-  const GX = { hz: new Set(), fz: new Map(), tm: new Map(), pt: new Map(), wn: new Set() };
+  const GX = { hz: new Set(), fz: new Map(), tm: new Map(), pt: new Map(), wn: new Set(), sl: new Map(), ft: new Map(), rp: new Map(), pc: new Map(), total: 0 };
   function cacheG(g) {
     GX.hz = new Set(Array.isArray(g.hz) ? g.hz.map(String) : (g.it ? [g.it] : []));
     GX.fz = new Map(Array.isArray(g.fz) ? g.fz.map((e) => [String(e[0]), num(e[1])]) : []);
     GX.tm = new Map(Array.isArray(g.tm) ? g.tm.map((e) => [String(e[0]), num(e[1]) ? 1 : 0]) : []);
     GX.pt = new Map(Array.isArray(g.pt) ? g.pt.map((e) => [String(e[0]), num(e[1])]) : []);
     GX.wn = new Set(Array.isArray(g.wn) ? g.wn.map(String) : []);
+    const mm = (k) => new Map(Array.isArray(g[k]) ? g[k].map((e) => [String(e[0]), num(e[1])]) : []);
+    GX.sl = mm('sl'); GX.ft = mm('ft'); GX.rp = mm('rp'); GX.pc = mm('pc');
+    GX.total = (Array.isArray(g.b) ? g.b.length : 0) + 1 + (session && session.multi ? salaPeers().filter((p) => !(p.isMe && p.sameTab)).length : 0);
   }
   const gMode = () => (G && MODES.some((m) => m.id === G.md) ? G.md : 'cl');
   const isHunter = (id) => !!G && G.ph === 'p' && GX.hz.has(id);
@@ -2251,10 +2344,15 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   const teamOf = (id) => (G && gMode() === 'eq' && GX.tm.has(id) ? GX.tm.get(id) : -1);
   function modsFor(id, t) {
     const m = baseMods();
+    const md = gMode();
     if (isHunter(id)) {
-      if (gMode() === 'cl') { m.speed *= CFG.itSpeed; m.agility *= CFG.itAgility; }
-      else { m.speed *= 1.06; m.agility *= 0.9; }
-    }
+      if (md === 'cl') { const late = clamp(1 - remaining(t) / 30000, 0, 1); m.speed *= CFG.itSpeed + 0.12 * late; m.agility *= CFG.itAgility; }
+      else if (md === 'in') { m.speed *= G.fi === id && GX.hz.size <= 2 ? 1.1 : 1.0; m.agility *= 0.92; }
+      else if (md === 'co') { m.speed *= 1.1; m.agility *= 0.9; }
+      else { m.speed *= 1.04; }
+    } else if (md === 'in' && G && G.ph === 'p' && GX.total - GX.hz.size === 1) m.speed *= 1.1;   // último sano: empujón extra
+    const slow = GX.sl.get(id);
+    if (slow && slow - (t - Gat) > 0) { m.speed *= 0.55; m.dash = 0; }
     for (const f of fxFor(id, t)) {
       const mo = PU[f.k].mods;
       if (mo.speed) m.speed *= mo.speed;
@@ -2299,7 +2397,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       case 2: toast(`${nameOf(a)} se salvó con su escudo`); SND.block(); break;
       case 3: if (mine) { toast(`Evolución: ${PU[clamp(num(b) | 0, 0, PU.length - 1)].name}`); SND.pickup(1, num(b)); roundStats.orbs++; } else SND.pickup(0.25, num(b)); break;
       case 4: toast(`El Director ${MUTS[clamp(num(a) | 0, 0, 3)].text}`, true); SND.whoosh(); break;
-      case 5: onRoundEnd(String(b || '')); break;
+      case 5: {
+        if (String(b || '').startsWith('cl') && a) { const av = avatars.get(a === me_ ? '__me' : a); if (av) spawnBoom(av.dx, av.dy, av.dz); SND.boom(); }
+        onRoundEnd(String(b || ''));
+        break;
+      }
       case 7: toast('Sala reiniciada: marcador en cero', true); break;
       case 6: {
         roundStats = { tags: 0, orbs: 0, rescues: 0 };
@@ -2315,7 +2417,18 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       case 9: toast(mine ? '¡Te infectaron! Ahora cazas tú' : `${nameOf(b)} infectó a ${nameOf(a)}`, mine); SND.infect(); if (byMe) roundStats.tags++; break;
       case 10: toast(mine ? '¡Te congelaron! Espera a un compañero' : `${nameOf(b)} congeló a ${nameOf(a)}`, mine); SND.freeze(); if (byMe) roundStats.tags++; break;
       case 11: toast(mine ? '¡Te atraparon!' : `${nameOf(b)} atrapó a ${nameOf(a)}`, mine); SND.freeze(); if (byMe) roundStats.tags++; break;
-      case 12: toast(byMe ? `Descongelaste a ${nameOf(a)}` : mine ? `${nameOf(b)} te descongeló` : `${nameOf(b)} descongeló a ${nameOf(a)}`); SND.unfreeze(); if (byMe) roundStats.rescues++; break;
+      case 12:
+        if (!b) { if (mine) toast('El hielo se derritió: ¡corre!'); SND.unfreeze(); break; }
+        toast(byMe ? `Descongelaste a ${nameOf(a)}` : mine ? `${nameOf(b)} te descongeló` : `${nameOf(b)} descongeló a ${nameOf(a)}`); SND.unfreeze(); if (byMe) roundStats.rescues++; break;
+      case 13: {
+        const av = avatars.get(mine ? '__me' : a);
+        if (av) spawnRing(av.dx, av.dy, av.dz, 0x6dff7a, PULSE.r, 650);
+        SND.pulse();
+        const sl = GX.sl.get(me_);
+        if (!mine && sl) toast('¡Un pulso te frenó!', true);
+        break;
+      }
+      case 14: toast(mine ? `¡Liberaste a ${b} de tu equipo!` : `${nameOf(a)} liberó a ${b} de la cárcel`, mine); SND.unfreeze(); if (mine) roundStats.rescues += num(b); break;
       default: break;
     }
   }
@@ -2479,6 +2592,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     if (e.key === 'Escape' && !$('#chatPanel').hidden) { closeChat(); return; }
     if (typing() || mode !== 'game') return;
     if (e.code === 'KeyV' && !e.repeat) { e.preventDefault(); setView(viewMode === 'fp' ? 'tp' : 'fp'); return; }
+    if (e.code === 'KeyE' && !e.repeat) { e.preventDefault(); useAbility(); return; }
     const k = keyName(e);
     if (!k) return;
     e.preventDefault();
@@ -2579,6 +2693,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   holdButton($('#btnJump'), () => { jumpQueued = true; });
   holdButton($('#btnDash'), () => { dashQueued = true; });
+  holdButton($('#btnAbility'), () => { useAbility(); });
 
   // ================================================================
   // Jugador local
@@ -2700,6 +2815,17 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       }
     } else if (ph === 'o') { timer = '0:00'; status = 'Fin de la ronda'; }
     const urgent = ph === 'p' && rem < 30000;
+    // Contador grande según el modo
+    const cnt = $('#counter');
+    let cN = '', cL = '';
+    if (ph === 'p' && md !== 'cl') {
+      const freeN = ids.filter((id) => !GX.hz.has(id) && !GX.fz.get(id)).length;
+      if (md === 'in') { cN = String(freeN); cL = freeN === 1 ? 'sano' : 'sanos'; }
+      else if (md === 'co') { cN = String(freeN); cL = freeN === 1 ? 'libre' : 'libres'; }
+      else { const jl = ids.filter((id) => GX.fz.get(id) === 2).length; cN = String(freeN); cL = `libres · ${jl} en la cárcel`; }
+    }
+    if (cnt.hidden === !!cN) cnt.hidden = !cN;
+    if (cN && cnt.dataset.sig !== cN + cL) { cnt.dataset.sig = cN + cL; cnt.firstChild.textContent = cN; cnt.lastChild.textContent = cL; }
     const sig = timer + '|' + status + '|' + isIt + '|' + urgent;
     if (sig !== lastHud) {
       lastHud = sig;
@@ -2796,6 +2922,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       SND.thump(0.3 + tension * 0.5);
       SND.nextBeat = t + lerp(1050, 380, tension);
     }
+    // Clásico: la bomba hace tic-tac en los últimos 30 s, cada vez más rápido
+    if (gMode() === 'cl' && rem < 30000 && t >= (SND.nextTick || 0)) {
+      const u = 1 - rem / 30000;
+      SND.tick(u > 0.7); SND.nextTick = t + lerp(1000, 180, u);
+    }
   }
 
   // ================================================================
@@ -2804,8 +2935,17 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   function renderWorld(t, dt) {
     const seen = new Set(['__me']);
     const meAv = ensureAvatar('__me', look);
-    const flags = (id, extra) => Object.assign({ it: isHunter(id), frozen: frozenOf(id), team: teamOf(id), cheer: !!(G && G.ph === 'o' && GX.wn.has(id)),
-      evo: fxFor(id, t).length, shield: shieldOf(id) }, extra);
+    const remT = G && G.ph === 'p' ? remaining(t) : 1e9, cl = gMode() === 'cl';
+    const flags = (id, extra) => {
+      const fz = frozenOf(id), o = Object.assign({ it: isHunter(id), frozen: fz, team: teamOf(id), cheer: !!(G && G.ph === 'o' && GX.wn.has(id)),
+        evo: fxFor(id, t).length, shield: shieldOf(id), bomb: cl && isHunter(id), bombHot: cl && remT < 30000 ? 1 - remT / 30000 : 0 }, extra);
+      if (fz === 1) {
+        const ft = GX.ft.get(id), left = ft != null ? ft - (t - Gat) : THAW_MS, rp = GX.rp.get(id);
+        o.thaw = left / THAW_MS;
+        if (!extra.mine || true) o.name = extra.name + (rp ? ` · ${Math.round(rp * 100)}%` : ` · ${Math.max(0, Math.ceil(left / 1000))}s`);
+      }
+      return o;
+    };
     const me_ = myId();
     updateAvatar(meAv, me.body.x, me.body.y, me.body.z, me.body.ry,
       flags(me_, { tr: look.tr, name: bubbleFor(me_) || look.name, mine: true, smooth: 60 }), t, dt);
@@ -3025,6 +3165,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       poly([[b.x0, b.z0], [b.x1, b.z0], [b.x1, b.z1], [b.x0, b.z1]]); c.fill();
     }
     if (world.mask & 4) { poly([[GRAV.x0, GRAV.z0], [GRAV.x1, GRAV.z0], [GRAV.x1, GRAV.z1], [GRAV.x0, GRAV.z1]]); c.strokeStyle = '#6dff7a'; c.lineWidth = 2; c.stroke(); }
+    if (G && G.ph === 'p' && gMode() === 'eq') {
+      const [u, w] = P(JAIL.plate.x, JAIL.plate.z);
+      c.strokeStyle = '#35e0ff'; c.lineWidth = 2; c.beginPath(); c.arc(u, w, 5, 0, Math.PI * 2); c.stroke();
+    }
     if (world.mask & 2) {
       c.fillStyle = '#6dff7a';
       for (const v of VENTS) { const [u, w] = P(v.x, v.z); c.fillRect(u - 3, w - 3, 6, 6); }
@@ -3335,9 +3479,22 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   const TEAM_MATS = TEAM_COLORS.map((c) => new T.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85, side: T.DoubleSide, depthWrite: false }));
   const RB = new T.Color();
   function avatarExtras(av, o, t, dt) {
-    // Congelado / atrapado: bloque de hielo
-    if (o.frozen && !av.ice) { av.ice = new T.Mesh(ICE_GEO, ICE_MAT); av.model.add(av.ice); }
-    if (av.ice) { av.ice.visible = !!o.frozen; if (o.frozen) av.ice.rotation.y += dt * 0.3; }
+    // Congelado: bloque de hielo que se encoge al derretirse · Atrapado: jaula
+    if (o.frozen === 1 && !av.ice) { av.ice = new T.Mesh(ICE_GEO, ICE_MAT); av.model.add(av.ice); }
+    if (av.ice) { av.ice.visible = o.frozen === 1; if (o.frozen === 1) { av.ice.rotation.y += dt * 0.3; av.ice.scale.setScalar(0.75 + 0.25 * clamp(o.thaw == null ? 1 : o.thaw, 0, 1)); } }
+    if (o.frozen === 2 && !av.cage) { av.cage = new T.Mesh(CAGE_GEO, CAGE_MAT); av.cage.position.y = 1.05; av.root.add(av.cage); }
+    if (av.cage) { av.cage.visible = o.frozen === 2; if (o.frozen === 2) av.cage.rotation.y += dt * 0.5; }
+    // Clásico: la bomba encima de quien la lleva
+    if (o.bomb && !av.bomb) { av.bomb = makeBomb(); av.root.add(av.bomb); }
+    if (av.bomb) {
+      av.bomb.visible = !!o.bomb;
+      if (o.bomb) {
+        av.bomb.children[2].scale.setScalar(0.7 + Math.random() * 0.6);
+        const hot = o.bombHot && Math.sin(t * (0.01 + 0.02 * o.bombHot)) > 0;
+        av.bomb.children[0].material = hot ? SPARK_MAT : BOMB_MAT;
+        av.bomb.position.y = 1.75 + Math.sin(t * 0.006) * 0.06;
+      }
+    }
     // Equipo: aro de color en los pies
     if (o.team >= 0 && !av.teamRing) { av.teamRing = new T.Mesh(TEAM_RING_GEO, TEAM_MATS[0]); av.teamRing.rotation.x = -Math.PI / 2; av.teamRing.position.y = 0.04; av.root.add(av.teamRing); }
     if (av.teamRing) { av.teamRing.visible = o.team >= 0; if (o.team >= 0) av.teamRing.material = TEAM_MATS[o.team]; }
@@ -3360,6 +3517,159 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     return base;
   }
   buildLook($('#lookGame'));
+
+  // ================================================================
+  // Efectos de los modos: pulso, explosión, bomba, jaula y placa de la cárcel
+  // ================================================================
+  const FX = [];
+  const FX_RING = new T.RingGeometry(0.85, 1, 48), FX_SPH = new T.SphereGeometry(1, 20, 12);
+  function spawnRing(x, y, z, color, maxR, dur) {
+    const m = new T.Mesh(FX_RING, new T.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, y + 0.15, z); scene.add(m);
+    FX.push({ m, t0: nowMs(), dur, maxR, kind: 'ring' });
+  }
+  function spawnBoom(x, y, z) {
+    const m = new T.Mesh(FX_SPH, new T.MeshBasicMaterial({ color: 0xff8a2b, transparent: true, opacity: 0.85, depthWrite: false, blending: T.AdditiveBlending }));
+    m.position.set(x, y + 1, z); scene.add(m);
+    FX.push({ m, t0: nowMs(), dur: 900, maxR: 4.5, kind: 'boom' });
+    spawnRing(x, y, z, 0xffd23d, 7, 900); spawnRing(x, y, z, 0xff3d5a, 5, 700);
+  }
+  function updateFx(t) {
+    for (let i = FX.length - 1; i >= 0; i--) {
+      const f = FX[i], u = (t - f.t0) / f.dur;
+      if (u >= 1) { scene.remove(f.m); f.m.material.dispose(); FX.splice(i, 1); continue; }
+      const r = 0.2 + f.maxR * (1 - Math.pow(1 - u, 2));
+      f.m.scale.setScalar(r);
+      f.m.material.opacity = (f.kind === 'boom' ? 0.85 : 0.9) * (1 - u);
+    }
+    // placa de la cárcel: solo en Equipos durante la ronda
+    jailPlate.visible = !!(G && G.ph === 'p' && gMode() === 'eq');
+    if (jailPlate.visible) { jailPlate.children[1].rotation.z += 0.02; jailPlate.children[1].material.opacity = 0.5 + 0.3 * Math.sin(t * 0.006); }
+  }
+  // Placa de rescate de la cárcel (Seguridad)
+  const jailPlate = new T.Group();
+  {
+    const disc = new T.Mesh(new T.CylinderGeometry(1.25, 1.25, 0.06, 32), new T.MeshBasicMaterial({ color: 0x0b3a4a }));
+    disc.position.y = 0.03; jailPlate.add(disc);
+    const ring = new T.Mesh(new T.RingGeometry(1.0, 1.3, 40), new T.MeshBasicMaterial({ color: 0x35e0ff, transparent: true, opacity: 0.7, side: T.DoubleSide, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = 0.08; jailPlate.add(ring);
+    const beam = new T.Mesh(new T.CylinderGeometry(1.2, 1.2, 3, 32, 1, true), new T.MeshBasicMaterial({ color: 0x35e0ff, transparent: true, opacity: 0.12, side: T.DoubleSide, depthWrite: false, blending: T.AdditiveBlending }));
+    beam.position.y = 1.5; jailPlate.add(beam);
+    jailPlate.position.set(JAIL.plate.x, 0, JAIL.plate.z); jailPlate.visible = false;
+    scene.add(jailPlate);
+  }
+  const CAGE_GEO = new T.CylinderGeometry(0.75, 0.75, 2.1, 10, 4, true);
+  const CAGE_MAT = new T.MeshBasicMaterial({ color: 0xff5a6e, wireframe: true, transparent: true, opacity: 0.8 });
+  const BOMB_MAT = new T.MeshStandardMaterial({ color: 0x2a2633, emissive: 0x3a0a14, roughness: 0.35, metalness: 0.3 });
+  const SPARK_MAT = new T.MeshBasicMaterial({ color: 0xffd23d });
+  function makeBomb() {
+    const g = new T.Group();
+    g.add(new T.Mesh(new T.SphereGeometry(0.26, 18, 12), BOMB_MAT));
+    const fuse = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.16, 6), SPARK_MAT); fuse.position.y = 0.3; g.add(fuse);
+    const spark = new T.Mesh(new T.SphereGeometry(0.08, 8, 6), new T.MeshBasicMaterial({ color: 0xff8a2b })); spark.position.y = 0.41; g.add(spark);
+    g.position.set(0.55, 1.75, 0);
+    return g;
+  }
+
+  // ================================================================
+  // Claridad: tarjeta de inicio, contador, aviso de peligro y flechas
+  // ================================================================
+  function introText() {
+    const md = gMode(), me_ = myId(), info = MODES.find((m) => m.id === md) || MODES[0];
+    const playing = G.ph === 'p', h = isHunter(me_);
+    let role = 'PREPÁRATE', rules = [];
+    if (md === 'cl') { if (playing) role = h ? 'LLEVAS LA BOMBA' : 'HUYE'; rules = ['Toca a alguien para pasarle la bomba.', 'En los últimos 30 s se acelera; si la tienes al final, explota.']; }
+    else if (md === 'in') { if (playing) role = h ? 'ESTÁS INFECTADO' : 'SOBREVIVE'; rules = ['A quien tocan se infecta y caza contigo.', 'Infectados: pulsa E (o el botón Pulso) para frenar a los que estén cerca.']; }
+    else if (md === 'eq') { const tm = teamOf(me_); if (playing && tm >= 0) role = `EQUIPO ${TEAM_NAMES[tm].toUpperCase()} · ${h ? 'CAZA' : 'HUYE'}`; rules = ['A quien atrapan va a la cárcel, en Seguridad.', 'Pisa la placa azul de la cárcel para liberar a tu equipo.']; }
+    else { if (playing) role = h ? 'CONGELA A TODOS' : 'HUYE Y RESCATA'; rules = ['Tocar congela. Quédate junto a un compañero congelado para descongelarlo.', 'El hielo se derrite solo a los 20 segundos.']; }
+    return { kicker: info.name, role, rules, hunter: playing && h };
+  }
+  let lastIntro = '', abilityQueued = false, abSeq = 0;
+  const arrowEls = [];
+  const V3 = new T.Vector3();
+  function arrow(i) {
+    if (!arrowEls[i]) {
+      const el = document.createElement('div'); el.className = 'tv-arrow'; el.innerHTML = '<i></i><span></span>';
+      $('#arrows').appendChild(el); arrowEls[i] = el;
+    }
+    return arrowEls[i];
+  }
+  function placeArrow(i, x, y, z, cls, label) {
+    const el = arrow(i), w = window.innerWidth, h = window.innerHeight;
+    V3.set(x, y + 1.2, z).project(camera);
+    let nx = V3.x, ny = V3.y;
+    const behind = V3.z > 1;
+    if (behind) { nx = -nx; ny = -ny; }
+    const onScreen = !behind && Math.abs(nx) < 0.88 && Math.abs(ny) < 0.8;
+    if (onScreen) { el.hidden = true; return; }
+    const ang = Math.atan2(ny, nx), ex = 0.86, ey = 0.74;
+    const k = Math.min(ex / Math.max(Math.abs(Math.cos(ang)), 1e-3), ey / Math.max(Math.abs(Math.sin(ang)), 1e-3));
+    const px = (Math.cos(ang) * k * 0.5 + 0.5) * w, py = (0.5 - Math.sin(ang) * k * 0.5) * h;
+    el.hidden = false; el.className = 'tv-arrow ' + cls;
+    el.style.transform = `translate(${px.toFixed(0)}px, ${py.toFixed(0)}px)`;
+    el.firstChild.style.transform = `rotate(${(-ang).toFixed(3)}rad)`;
+    if (el.lastChild.textContent !== label) el.lastChild.textContent = label;
+  }
+  function updateClarity(t) {
+    const intro = $('#intro'), danger = $('#danger');
+    const inGame = mode === 'game' && G;
+    // Tarjeta de explicación: durante la cuenta atrás y los primeros segundos de la ronda
+    const showIntro = inGame && (G.ph === 'c' || (G.ph === 'p' && remaining(t) > num(G.rm, 180000) - 3500));
+    if (intro.hidden === showIntro) intro.hidden = !showIntro;
+    if (showIntro) {
+      const it = introText(), sig = JSON.stringify(it);
+      if (sig !== lastIntro) {
+        lastIntro = sig;
+        intro.querySelector('.in-kicker').textContent = it.kicker;
+        const r = intro.querySelector('.in-role'); r.textContent = it.role; r.classList.toggle('hot', it.hunter);
+        intro.querySelector('.in-rules').innerHTML = '';
+        for (const line of it.rules) { const li = document.createElement('li'); li.textContent = line; intro.querySelector('.in-rules').appendChild(li); }
+      }
+    }
+    // Flechas y peligro
+    let n = 0, dangerA = 0;
+    if (inGame && G.ph === 'p') {
+      const me_ = myId(), md = gMode(), b = me.body;
+      const pos = (id) => { const av = avatars.get(id === me_ ? '__me' : id); return av ? { x: av.dx, y: av.dy, z: av.dz } : null; };
+      const all = [...avatars.keys()].filter((k) => k !== '__me');
+      const dist = (p) => Math.hypot(p.x - b.x, p.z - b.z);
+      const nearest = (list) => { let best = null, bd = 1e9; for (const id of list) { const p = pos(id); if (!p) continue; const d = dist(p); if (d < bd) { bd = d; best = { p, d }; } } return best; };
+      const fz = frozenOf(me_);
+      if (isHunter(me_) && !fz) {
+        const prey = nearest(all.filter((id) => !isHunter(id) && !frozenOf(id)));
+        if (prey) placeArrow(n++, prey.p.x, prey.p.y, prey.p.z, 'target', Math.round(prey.d) + ' m');
+      } else if (!fz) {
+        const th = nearest(all.filter((id) => isHunter(id) && !frozenOf(id)));
+        if (th && th.d < 30) placeArrow(n++, th.p.x, th.p.y, th.p.z, 'threat', Math.round(th.d) + ' m');
+        if (th) dangerA = clamp(1 - th.d / 7, 0, 1);
+        if (md === 'co') {
+          const ally = nearest(all.filter((id) => frozenOf(id) === 1));
+          if (ally) placeArrow(n++, ally.p.x, ally.p.y, ally.p.z, 'ally', 'rescatar · ' + Math.round(ally.d) + ' m');
+        } else if (md === 'eq') {
+          const tm = teamOf(me_), jailed = all.filter((id) => frozenOf(id) === 2 && teamOf(id) === tm).length;
+          if (jailed) placeArrow(n++, JAIL.plate.x, 0, JAIL.plate.z, 'ally', `cárcel (${jailed}) · ${Math.round(Math.hypot(JAIL.plate.x - b.x, JAIL.plate.z - b.z))} m`);
+        }
+      }
+    }
+    for (let i = n; i < arrowEls.length; i++) arrowEls[i].hidden = true;
+    const op = (dangerA * 0.85).toFixed(2);
+    if (danger.style.opacity !== op) danger.style.opacity = op;
+    // Botón de habilidad (Infección)
+    const ab = $('#btnAbility');
+    const showAb = !!(inGame && G.ph === 'p' && gMode() === 'in' && isHunter(myId()));
+    if (ab.hidden === showAb) ab.hidden = !showAb;
+    if (showAb) {
+      const cd = GX.pc.get(myId()), left = cd ? cd - (t - Gat) : 0;
+      const txt = left > 0 ? `Pulso ${Math.ceil(left / 1000)}` : 'Pulso';
+      if (ab.textContent !== txt) ab.textContent = txt;
+      ab.style.opacity = left > 0 ? '0.45' : '1';
+    }
+  }
+  function useAbility() {
+    if (!G || G.ph !== 'p' || gMode() !== 'in' || !isHunter(myId())) return;
+    if (iAmHost && S) doPulse(myId(), hostEntities(), nowMs());
+    else if (room) { abSeq++; room.presence({ ab: abSeq }).catch(() => {}); }
+  }
 
   // ================================================================
   // Bucle principal
@@ -3392,6 +3702,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     stationTick(t, dt);
     if (mode === 'game' && G && G.ph !== 'w') drawMinimap(t);
     updateCamera(dt);
+    updateFx(t);
+    updateClarity(t);
     renderer.render(scene, camera);
   }
 
