@@ -1,0 +1,3094 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="TagVerse: Evolución, la lleva en 3D en una estación espacial, con bots, evoluciones y un Director que cambia el mapa.">
+<style>[hidden]:not([hidden=until-found i]){display:none!important}body{margin:0}</style>
+<title>TagVerse: Evolución</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;500;600;700&display=swap">
+<style>
+/* Concepto: arcade de neón a pantalla completa. El mapa 3D es el fondo; la interfaz flota en paneles de vidrio oscuro. */
+:root {
+  --void: #0b0a1a;
+  --glass: rgba(16, 12, 40, 0.84);
+  --glass-hi: rgba(36, 28, 84, 0.9);
+  --line: rgba(170, 156, 255, 0.24);
+  --ink: #f2efff;
+  --muted: #a8a2d6;
+  --it: #ff3d9a;
+  --run: #35e0ff;
+  --gold: #ffd23d;
+  --ok: #6dff7a;
+  --display: 'Bungee', 'Arial Black', Impact, sans-serif;
+  --ui: 'Chakra Petch', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--void); color: var(--ink); font-family: var(--ui);
+  overflow: hidden; -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent; overscroll-behavior: none;
+}
+#app { position: fixed; inset: 0; overflow: hidden; }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--run); outline-offset: 2px; }
+
+/* ---------- Menú ---------- */
+#menu {
+  position: absolute; z-index: 20;
+  top: calc(12px + var(--safe-t)); bottom: calc(12px + var(--safe-b));
+  left: max(12px, var(--safe-l));
+  width: min(430px, calc(100% - 24px - var(--safe-l) - var(--safe-r)));
+  display: flex;
+}
+.menu-card {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 18px;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  padding: 20px 20px 16px; overflow-y: auto; width: 100%;
+  display: flex; flex-direction: column; gap: 14px; touch-action: pan-y;
+  -webkit-user-select: text; user-select: text;
+}
+.brand h1 {
+  margin: 0; font-family: var(--display); font-weight: 400; line-height: 0.95;
+  font-size: clamp(30px, 6vw, 42px); letter-spacing: 0.01em; text-wrap: balance;
+  color: var(--ink); text-shadow: 0 0 18px rgba(255, 61, 154, 0.55);
+}
+.brand h1 span { display: block; font-size: 0.48em; color: var(--it); letter-spacing: 0.14em; margin-top: 6px; }
+.tagline { margin: 8px 0 0; color: var(--muted); font-size: 15px; line-height: 1.4; }
+.lbl { font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.field { display: flex; flex-direction: column; gap: 7px; }
+.field input {
+  background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--ink); font: 600 17px var(--ui); padding: 10px 12px; width: 100%;
+}
+.swatches, .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.swatch {
+  width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 12px currentColor; }
+.chip {
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 12px; font-size: 14px; font-weight: 600;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--void); border-color: var(--ink); }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.split > * { min-width: 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
+.cta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cta {
+  border: 0; border-radius: 12px; padding: 13px 10px; font-weight: 700; font-size: 16px;
+  background: var(--it); color: #1a0410; box-shadow: 0 6px 22px rgba(255, 61, 154, 0.35);
+}
+.cta.alt { background: var(--run); color: #031820; box-shadow: 0 6px 22px rgba(53, 224, 255, 0.3); }
+.cta:disabled { opacity: 0.38; box-shadow: none; cursor: not-allowed; }
+.net { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.net b { color: var(--ok); font-weight: 600; }
+.lobby { display: flex; flex-direction: column; gap: 8px; }
+.lobby .empty { margin: 0; font-size: 14px; color: var(--muted); }
+.room-btn {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left;
+  background: var(--glass-hi); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+}
+.room-btn strong { display: block; font-size: 15px; }
+.room-btn small { color: var(--muted); font-size: 13px; }
+.room-btn .go { font-weight: 700; color: var(--run); flex: none; }
+.keys { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+
+/* ---------- HUD ---------- */
+#hud { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
+.hud-top {
+  position: absolute; left: 0; right: 0; top: 0;
+  padding: calc(10px + var(--safe-t)) max(12px, var(--safe-r)) 0 max(12px, var(--safe-l));
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
+}
+.chip-btn {
+  pointer-events: auto; background: var(--glass); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 12px; font-size: 14px; font-weight: 600;
+}
+.clock { text-align: center; flex: 1; min-width: 0; }
+#timer {
+  font-family: var(--display); font-size: clamp(34px, 6vw, 52px); line-height: 1;
+  font-variant-numeric: tabular-nums; text-shadow: 0 0 16px rgba(53, 224, 255, 0.6);
+}
+#timer.urgent { color: var(--it); text-shadow: 0 0 18px rgba(255, 61, 154, 0.8); }
+#status {
+  display: inline-block; margin-top: 6px; padding: 5px 12px; border-radius: 999px;
+  background: var(--glass); font-weight: 700; font-size: clamp(13px, 2.4vw, 17px);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#status.is-it { background: var(--it); color: #1a0410; }
+#roster {
+  position: absolute; list-style: none; margin: 0; padding: 0;
+  top: calc(122px + var(--safe-t)); left: max(12px, var(--safe-l));
+  display: flex; flex-direction: column; gap: 5px; max-width: 46vw;
+}
+#roster li {
+  display: flex; align-items: center; gap: 7px; background: var(--glass); border-radius: 8px;
+  padding: 4px 9px; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden;
+}
+#roster .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+#roster .nm { overflow: hidden; text-overflow: ellipsis; }
+#roster .badge { font-size: 10.5px; letter-spacing: 0.08em; padding: 1px 6px; border-radius: 5px; flex: none; }
+#roster .badge.it { background: var(--it); color: #1a0410; }
+#roster .badge.sh { background: #b48cff; color: #14063a; }
+#roster .lost { color: var(--muted); font-weight: 500; flex: none; }
+#roomTag {
+  font-size: 12.5px; color: var(--muted); background: var(--glass); padding: 4px 9px; border-radius: 8px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.hud-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: 42vw; min-width: 0; }
+#minimap {
+  pointer-events: auto; cursor: pointer; display: block; border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--line), 0 6px 22px rgba(0, 0, 0, 0.45);
+  touch-action: manipulation;
+}
+#evos {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: calc(14px + var(--safe-b)); display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  max-width: 60vw;
+}
+.evo {
+  font-size: 13px; font-weight: 700; padding: 5px 10px; border-radius: 999px; color: #0b0a1a;
+  font-variant-numeric: tabular-nums;
+}
+#toasts {
+  position: absolute; left: 50%; transform: translateX(-50%); top: calc(130px + var(--safe-t));
+  display: flex; flex-direction: column; align-items: center; gap: 6px; width: min(520px, 90vw);
+}
+.toast {
+  background: var(--glass-hi); border: 1px solid var(--line); border-radius: 10px; padding: 7px 14px;
+  font-weight: 600; font-size: 15px; text-align: center; animation: pop 2.6s ease forwards;
+}
+.toast.hot { border-color: var(--it); color: #ffd6ea; }
+@keyframes pop {
+  0% { opacity: 0; transform: translateY(-6px) scale(0.96); }
+  10%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+
+/* ---------- Controles táctiles ---------- */
+#touch { position: absolute; inset: 0; z-index: 5; touch-action: none; }
+#joy {
+  position: absolute; width: 130px; height: 130px; margin: -65px 0 0 -65px; border-radius: 50%;
+  border: 2px solid rgba(53, 224, 255, 0.45); background: rgba(53, 224, 255, 0.08); pointer-events: none;
+}
+#joyKnob {
+  position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px;
+  border-radius: 50%; background: rgba(53, 224, 255, 0.55); box-shadow: 0 0 18px rgba(53, 224, 255, 0.6);
+}
+.joy-hint {
+  position: absolute; left: calc(26px + var(--safe-l)); bottom: calc(26px + var(--safe-b));
+  color: rgba(242, 239, 255, 0.45); font-size: 13px; font-weight: 600; pointer-events: none;
+}
+.tbtn {
+  position: absolute; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(16, 12, 40, 0.55); font-weight: 700; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+}
+.tbtn:active, .tbtn.down { background: rgba(255, 255, 255, 0.22); }
+#btnJump {
+  width: 92px; height: 92px; font-size: 16px;
+  right: calc(22px + var(--safe-r)); bottom: calc(26px + var(--safe-b));
+  border-color: rgba(53, 224, 255, 0.7);
+}
+#btnDash {
+  width: 70px; height: 70px; font-size: 14px;
+  right: calc(128px + var(--safe-r)); bottom: calc(22px + var(--safe-b));
+  border-color: rgba(255, 210, 61, 0.7);
+}
+#dashPips { display: flex; gap: 3px; }
+#dashPips i { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); display: block; }
+#dashPips i.off { background: rgba(255, 255, 255, 0.2); }
+
+.code-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.code-row input {
+  background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 10px; min-width: 0;
+  color: var(--ink); font: 700 17px var(--ui); letter-spacing: 0.18em; text-transform: uppercase; padding: 10px 12px;
+}
+.btn-ghost {
+  border: 1px solid var(--run); background: transparent; color: var(--run); border-radius: 10px;
+  padding: 10px 14px; font-weight: 700;
+}
+.btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
+.hud-left, .hud-right { display: flex; gap: 8px; flex-wrap: wrap; }
+.hud-right { justify-content: flex-end; }
+.chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--void); }
+#btnInvite { border-color: var(--run); color: var(--run); }
+#focusHint {
+  position: absolute; left: 50%; bottom: calc(64px + var(--safe-b)); transform: translateX(-50%);
+  pointer-events: auto; background: var(--gold); color: #1b1400; border: 0; border-radius: 999px;
+  padding: 9px 16px; font-weight: 700; font-size: 14px;
+}
+#keysHint {
+  position: absolute; left: 50%; bottom: calc(110px + var(--safe-b)); transform: translateX(-50%);
+  background: var(--glass); border-radius: 10px; padding: 7px 12px; font-size: 13.5px; color: var(--ink);
+  white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
+}
+#share {
+  position: absolute; inset: 0; z-index: 25; display: grid; place-items: center;
+  background: rgba(5, 4, 14, 0.62); padding: 16px;
+}
+.share-card {
+  background: var(--glass-hi); border: 1px solid var(--line); border-radius: 18px;
+  width: min(420px, 100%); max-height: 100%; overflow-y: auto; padding: 18px;
+  display: flex; flex-direction: column; gap: 12px; -webkit-user-select: text; user-select: text;
+}
+.share-card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 22px; }
+.share-code {
+  font-family: var(--display); font-size: 40px; letter-spacing: 0.16em; text-align: center;
+  color: var(--run); text-shadow: 0 0 14px rgba(53, 224, 255, 0.5); font-variant-numeric: tabular-nums;
+}
+.share-body { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; }
+#qr { background: #fff; border-radius: 10px; padding: 6px; width: 150px; height: 150px; display: grid; place-items: center; color: #333; font-size: 12px; text-align: center; }
+#qr svg { width: 100%; height: 100%; display: block; }
+.share-steps { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+.share-steps b { color: var(--ink); }
+.share-link {
+  font-size: 12.5px; color: var(--muted); word-break: break-all; background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px; padding: 8px;
+}
+.share-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.share-actions .cta { padding: 11px 8px; font-size: 15px; }
+@media (max-width: 420px) { .share-body { grid-template-columns: 1fr; justify-items: center; } }
+@media (max-height: 460px) { .share-body { grid-template-columns: auto 1fr; } #qr { width: 120px; height: 120px; } .share-code { font-size: 30px; } }
+
+#results {
+  position: absolute; inset: 0; display: grid; place-items: center; padding: 16px;
+  background: rgba(5, 4, 14, 0.55); pointer-events: auto; z-index: 3;
+}
+.res-card {
+  background: var(--glass-hi); border: 1px solid var(--it); border-radius: 18px; width: min(460px, 100%);
+  max-height: 100%; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; text-align: center;
+}
+.res-kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.res-card h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: clamp(26px, 5vw, 38px); color: var(--it); line-height: 1; }
+#resSub { margin: 0; font-weight: 700; font-size: 17px; text-wrap: balance; }
+#resTable { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 5px; text-align: left; }
+#resTable li { display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.25); border-radius: 8px; padding: 6px 10px; font-weight: 600; }
+#resTable .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+#resTable .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#resTable .sc { color: var(--muted); font-size: 13px; flex: none; font-variant-numeric: tabular-nums; }
+#resTable li.worst .sc { color: var(--it); }
+.res-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.res-actions .cta { padding: 11px 8px; font-size: 15px; }
+.res-actions .wide { grid-column: 1 / -1; }
+#resWait { grid-column: 1 / -1; margin: 0; color: var(--muted); font-weight: 600; }
+.res-auto { margin: 0; font-size: 12.5px; color: var(--muted); }
+#chatFeed {
+  position: absolute; left: max(12px, var(--safe-l)); bottom: calc(170px + var(--safe-b));
+  width: min(340px, 48vw); display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+}
+.chat-line {
+  background: var(--glass); border-radius: 9px; padding: 5px 10px; font-size: 14px; line-height: 1.3;
+  max-width: 100%; overflow-wrap: anywhere; animation: chatfade 9s ease forwards;
+}
+.chat-line b { font-weight: 700; margin-right: 5px; }
+@keyframes chatfade { 0% { opacity: 0; transform: translateY(4px); } 5%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+#chatPanel {
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(14px + var(--safe-b));
+  width: min(480px, calc(100% - 24px)); background: var(--glass-hi); border: 1px solid var(--line);
+  border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 8px; pointer-events: auto; z-index: 4;
+}
+#quick { display: flex; flex-wrap: wrap; gap: 6px; }
+#quick button { background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; font-size: 13.5px; font-weight: 600; }
+#chatForm { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; margin: 0; }
+#chatInput { background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 10px; color: var(--ink); font: 600 15px var(--ui); padding: 9px 10px; min-width: 0; }
+#chatForm .cta { padding: 9px 12px; font-size: 14px; }
+.tts { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); }
+.voice-note { margin: 0; font-size: 12px; color: var(--muted); }
+#menuNotice { color: var(--gold); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .chat-line { animation: none; } }
+
+/* ---------- Pestañas del menú ---------- */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: rgba(0, 0, 0, 0.28); border-radius: 12px; padding: 4px; }
+.tab { border: 0; background: transparent; border-radius: 9px; padding: 9px 8px; font-weight: 700; font-size: 15px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--glass-hi); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.tabpanel { display: flex; flex-direction: column; gap: 14px; }
+.tabpanel[hidden] { display: none; }
+.look-ed { display: flex; flex-direction: column; gap: 14px; }
+.room-btn .rdot { width: 12px; height: 12px; border-radius: 50%; flex: none; margin-right: 10px; box-shadow: 0 0 10px currentColor; }
+.room-btn .rleft { display: flex; align-items: center; min-width: 0; }
+.room-btn .rleft > span { min-width: 0; }
+.room-btn strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ---------- Sala de espera ---------- */
+#lobbyPanel {
+  position: absolute; right: max(12px, var(--safe-r)); top: calc(108px + var(--safe-t));
+  width: min(310px, 46vw); max-height: calc(100% - 108px - 150px - var(--safe-t) - var(--safe-b)); min-height: 0; overflow-y: auto;
+  background: var(--glass); border: 1px solid var(--line); border-radius: 16px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px; pointer-events: auto; touch-action: pan-y;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.lp-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.lp-kicker { font-size: 11.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.lp-title { font-family: var(--display); font-size: 20px; line-height: 1.1; color: var(--run); margin-top: 3px; }
+#lpBody { display: flex; flex-direction: column; gap: 10px; }
+#lpBody[hidden] { display: none; }
+#lpList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+#lpList li { display: flex; align-items: center; gap: 8px; background: rgba(0, 0, 0, 0.25); border-radius: 9px; padding: 6px 9px; font-weight: 600; font-size: 14px; }
+#lpList .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+#lpList .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tag { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; flex: none; font-weight: 700; }
+.tag.host { background: var(--gold); color: #1b1400; }
+.tag.bot { background: rgba(255, 255, 255, 0.12); color: var(--muted); }
+.tag.ok { background: var(--ok); color: #062a0b; }
+.tag.wait { color: var(--muted); border: 1px solid var(--line); }
+.lp-hint { margin: 0; font-size: 13px; color: var(--muted); line-height: 1.4; }
+.lp-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lp-actions .cta { padding: 11px 8px; font-size: 14.5px; }
+#lpStart { grid-column: 1 / -1; }
+#lpHost { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; }
+#lpHost .chip { padding: 5px 10px; font-size: 13px; }
+@media (pointer: fine) { #lobbyPanel { max-height: calc(100% - 108px - 24px - var(--safe-t) - var(--safe-b)); } }
+#lpHost[hidden] { display: none; }
+#lookPanel { position: absolute; inset: 0; z-index: 24; display: flex; align-items: center; justify-content: flex-end; padding: 16px; background: rgba(5, 4, 14, 0.2); }
+#lookPanel .share-card { width: min(360px, 100%); }
+#roomName { margin-top: 5px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
+@media (max-width: 520px) { #lobbyPanel { width: calc(100% - 24px); top: auto; bottom: calc(150px + var(--safe-b)); max-height: 46%; } }
+
+#boot {
+  position: absolute; inset: 0; z-index: 30; display: grid; place-items: center;
+  background: var(--void); font-family: var(--display); font-size: 20px; color: var(--muted);
+  padding: 0 24px; text-align: center;
+}
+
+@media (max-width: 759px) {
+  #menu { top: auto; height: min(64%, calc(100% - 24px - var(--safe-t) - var(--safe-b))); width: auto; right: max(12px, var(--safe-r)); }
+  .split { grid-template-columns: 1fr; }
+}
+@media (max-height: 460px) and (min-width: 760px) {
+  .menu-card { padding: 12px 16px 12px; gap: 10px; }
+  .tagline { display: none; }
+  .brand h1 { font-size: 28px; }
+  .brand h1 span { display: inline; margin: 0 0 0 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="view" tabindex="0" aria-label="Escena 3D del juego"></canvas>
+
+  <div id="touch" hidden>
+    <div id="joy" hidden><div id="joyKnob"></div></div>
+    <div class="joy-hint" id="joyHint">Toca aquí para moverte</div>
+    <button id="btnDash" class="tbtn" type="button">Dash<span id="dashPips"></span></button>
+    <button id="btnJump" class="tbtn" type="button">Saltar</button>
+  </div>
+
+  <div id="hud" hidden>
+    <div class="hud-top">
+      <div class="hud-left">
+        <button id="btnLeave" class="chip-btn" type="button">Salir</button>
+        <button id="btnInvite" class="chip-btn" type="button" hidden>Invitar</button>
+        <button id="btnChat" class="chip-btn" type="button" hidden>Chat</button>
+      </div>
+      <div class="clock">
+        <div id="timer">--:--</div>
+        <div id="status">Preparando…</div>
+        <div id="roomName"></div>
+      </div>
+      <div class="hud-side">
+        <div class="hud-right">
+          <button id="btnView" class="chip-btn" type="button" aria-pressed="false">Vista: 3ª persona</button>
+          <button id="btnMute" class="chip-btn" type="button" aria-pressed="false">Sonido: sí</button>
+          <button id="btnFull" class="chip-btn" type="button" hidden>Pantalla completa</button>
+          <button id="btnPad" class="chip-btn" type="button" aria-pressed="false" hidden>Controles en pantalla</button>
+        </div>
+        <div id="roomTag"></div>
+        <canvas id="minimap" role="img" aria-label="Mapa: tú en el centro, los demás jugadores como puntos de color. Toca para ampliar." title="Toca para ampliar o reducir"></canvas>
+      </div>
+    </div>
+    <ol id="roster" aria-label="Jugadores"></ol>
+    <div id="toasts" aria-live="polite"></div>
+    <div id="evos"></div>
+    <div id="chatFeed" aria-live="polite"></div>
+    <div id="results" hidden>
+      <div class="res-card" role="dialog" aria-labelledby="resTitle">
+        <div class="res-kicker" id="resRound">Ronda 1</div>
+        <h2 id="resTitle">¡Fin del juego!</h2>
+        <p id="resSub"></p>
+        <ol id="resTable" aria-label="Resultados"></ol>
+        <div id="resHost" class="res-actions">
+          <button id="btnAgain" class="cta alt" type="button">Otra ronda</button>
+          <button id="btnReset" class="cta alt" type="button">Volver a la sala</button>
+          <button id="btnEnd" class="cta wide" type="button">Terminar partida</button>
+        </div>
+        <div id="resGuest" class="res-actions">
+          <p id="resWait">Esperando a que el anfitrión elija…</p>
+          <button id="btnResLeave" class="cta wide" type="button">Salir de la sala</button>
+        </div>
+        <p class="res-auto" id="resAuto"></p>
+      </div>
+    </div>
+    <div id="chatPanel" hidden>
+      <div id="quick" aria-label="Frases rápidas"></div>
+      <form id="chatForm" autocomplete="off">
+        <input id="chatInput" maxlength="80" placeholder="Escribe un mensaje" aria-label="Mensaje">
+        <button class="cta alt" type="submit">Enviar</button>
+        <button class="cta" type="button" id="btnChatClose">Cerrar</button>
+      </form>
+      <label class="tts"><input type="checkbox" id="ttsToggle"> Leer en voz alta los mensajes de los demás</label>
+    </div>
+    <aside id="lobbyPanel" hidden aria-label="Sala de espera">
+      <div class="lp-head">
+        <div><div class="lp-kicker" id="lpKicker">Sala de espera</div><div class="lp-title" id="lpTitle">Práctica</div></div>
+        <button id="lpToggle" class="chip-btn" type="button" aria-expanded="true">Ocultar</button>
+      </div>
+      <div id="lpBody">
+        <ol id="lpList" aria-label="Jugadores en la sala"></ol>
+        <div id="lpHost">
+          <div class="field"><span class="lbl">Bots</span><div id="lpBots" class="chips" role="group" aria-label="Bots"></div></div>
+          <div class="field"><span class="lbl">Duración de ronda</span><div id="lpLen" class="chips" role="group" aria-label="Duración de ronda"></div></div>
+        </div>
+        <p id="lpHint" class="lp-hint"></p>
+        <div class="lp-actions">
+          <button id="lpLook" class="cta alt" type="button">Personalizar</button>
+          <button id="lpReady" class="cta alt" type="button" aria-pressed="false">Estoy listo</button>
+          <button id="lpInvite" class="cta alt" type="button">Invitar</button>
+          <button id="lpStart" class="cta" type="button">Empezar partida</button>
+        </div>
+      </div>
+    </aside>
+    <div id="keysHint" hidden>WASD o flechas para moverte · Espacio salta · Shift hace dash · V cambia la vista · arrastra para mirar</div>
+    <button id="focusHint" type="button" hidden>El teclado no le llega al juego: haz clic aquí</button>
+  </div>
+
+  <div id="share" hidden>
+    <div class="share-card" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+      <h2 id="shareTitle">Invita a tu sala</h2>
+      <div class="share-code" id="shareCode">-----</div>
+      <div class="share-body">
+        <div id="qr" aria-label="Código QR de la sala"></div>
+        <ol class="share-steps">
+          <li>Tu amigo abre <b>TagVerse</b> (compártele la página desde el menú <b>Compartir</b> de Claude).</li>
+          <li>Escribe el código en <b>Unirme con código</b>, o escanea el QR con la cámara.</li>
+        </ol>
+      </div>
+      <div class="share-link" id="shareLink"></div>
+      <div class="share-actions">
+        <button id="btnCopyCode" class="cta alt" type="button">Copiar código</button>
+        <button id="btnCopyLink" class="cta alt" type="button">Copiar enlace</button>
+      </div>
+      <button id="btnShareClose" class="cta" type="button">Listo, a jugar</button>
+    </div>
+  </div>
+
+  <div id="lookPanel" hidden>
+    <div class="share-card" role="dialog" aria-labelledby="lookTitle">
+      <h2 id="lookTitle">Tu personaje</h2>
+      <div id="lookGame" class="look-ed"></div>
+      <button id="lookClose" class="cta" type="button">Listo</button>
+    </div>
+  </div>
+
+  <section id="menu" aria-label="Menú principal">
+    <div class="menu-card">
+      <header class="brand">
+        <h1>TagVerse<span>EVOLUCIÓN</span></h1>
+        <p id="menuNotice" class="net" hidden></p>
+        <p class="tagline">La lleva en una estación espacial. Quien la tenga cuando el reloj llegue a cero, pierde la ronda.</p>
+      </header>
+      <div class="tabs" role="tablist" aria-label="Menú">
+        <button id="tabPlayBtn" class="tab" type="button" role="tab" aria-selected="true" aria-controls="tabPlay">Jugar</button>
+        <button id="tabLookBtn" class="tab" type="button" role="tab" aria-selected="false" aria-controls="tabLook">Personaje</button>
+      </div>
+      <div id="tabPlay" class="tabpanel" role="tabpanel" aria-labelledby="tabPlayBtn">
+        <div class="field">
+          <label class="lbl" for="inName">Tu nombre</label>
+          <input id="inName" maxlength="12" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="cta-row">
+          <button id="btnPractice" class="cta" type="button">Practicar con bots</button>
+          <button id="btnCreate" class="cta alt" type="button" disabled>Crear sala</button>
+        </div>
+        <div class="field">
+          <label class="lbl" for="inCode">Unirme con código</label>
+          <div class="code-row">
+            <input id="inCode" maxlength="8" autocomplete="off" spellcheck="false" placeholder="Ej. K7Q2M">
+            <button id="btnJoinCode" class="btn-ghost" type="button" disabled>Unirme</button>
+          </div>
+        </div>
+        <p id="netState" class="net">Buscando a otros jugadores…</p>
+        <div class="field">
+          <span class="lbl">Salas abiertas</span>
+          <div id="lobby" class="lobby"><p class="empty">Todavía no hay salas. Crea una y avisa a tus amigos.</p></div>
+        </div>
+        <p class="keys">Celular: joystick a la izquierda, arrastra a la derecha para mirar. PC: WASD, Espacio salta, Shift hace dash, V cambia entre primera y tercera persona.</p>
+      </div>
+      <div id="tabLook" class="tabpanel" role="tabpanel" aria-labelledby="tabLookBtn" hidden>
+        <div id="lookMenu" class="look-ed"></div>
+        <p class="keys">Los cambios se guardan solos. También puedes cambiar tu look dentro de la sala de espera.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="boot">Cargando motor 3D…</div>
+</div>
+
+<script src="lib/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="lib/SkeletonUtils.js"></script>
+<script src="lib/qrcode.js"></script>
+<script>
+(async function main() {
+  'use strict';
+  const boot = document.getElementById('boot');
+  if (!window.THREE) {
+    boot.textContent = 'No se pudo cargar el motor 3D. Revisa tu conexión y recarga la página.';
+    return;
+  }
+  const T = window.THREE;
+
+  // ================================================================
+  // Utilidades
+  // ================================================================
+  const $ = (s) => document.querySelector(s);
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const nowMs = () => performance.now();
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const num = (v, d = 0) => (typeof v === 'number' && isFinite(v) ? v : d);
+  const angleLerp = (a, b, t) => { let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI; if (d < -Math.PI) d += Math.PI * 2; return a + d * t; };
+  function hashStr(s) { let h = 7; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function fmtTime(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch (e) { return null; } }
+  function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* sin almacenamiento */ } }
+  let isTouch = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0;
+  const SHARE_URL = 'https://claude.ai/artifact/QPUGXBmzsAkfVZdLqeFRTL';
+  const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
+  const newCode = () => Array.from({ length: 5 }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
+  const cleanCode = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
+
+  // ================================================================
+  // Reglas y datos del juego
+  // ================================================================
+  const CFG = {
+    speed: 6.2, agility: 1, jumpV: 8.6, gravity: -26, accel: 48, airControl: 0.55, turn: 12,
+    dashSpeed: 20, dashDur: 0.18, dashRecharge: 2.5, coyote: 120, maxFall: 40,
+    radius: 0.42, height: 1.8, step: 0.55,
+    itSpeed: 1.15, itAgility: 0.75,            // mutación de quien la lleva
+    tagDist: 1.35, immunity: 2500, tagCooldown: 600,
+    countdown: 3000, overTime: 45000, orbEvery: 6500, maxOrbs: 6,
+  };
+  const PU = [
+    { name: 'Velocidad', css: '#35e0ff', hex: 0x35e0ff, dur: 6000, aud: 'any', mods: { speed: 1.4 } },
+    { name: 'Doble salto', css: '#6dff7a', hex: 0x6dff7a, dur: 10000, aud: 'any', mods: { jumps: 1 } },
+    { name: 'Dash', css: '#ffd23d', hex: 0xffd23d, dur: 10000, aud: 'any', mods: { dash: 2 } },
+    { name: 'Escudo', css: '#b48cff', hex: 0xb48cff, dur: 0, aud: 'any', mods: {} },
+    { name: 'Teletransporte', css: '#ff8a2b', hex: 0xff8a2b, dur: 0, aud: 'any', mods: {} },
+    { name: 'Furia', css: '#ff2d55', hex: 0xff2d55, dur: 5000, aud: 'any', mods: { speed: 1.25, agility: 1.4 } },
+  ];
+  const PU_WEIGHT = [3, 2.5, 2.5, 2, 1.5, 1];
+  const MUTS = [
+    { text: 'cerró las compuertas norte y sur del Comedor', dur: 20000, cd: 45000 },
+    { text: 'abrió los conductos de ventilación (pisa una rejilla verde)', dur: 30000, cd: 40000 },
+    { text: 'invirtió la gravedad en el Laboratorio', dur: 20000, cd: 35000 },
+    { text: 'provocó un apagón: solo ves lo que tienes cerca', dur: 16000, cd: 50000 },
+  ];
+  const COLORS = ['#35e0ff', '#ffd23d', '#6dff7a', '#ff8a5c', '#b48cff', '#ff6ec7', '#4dffd2', '#f2efff'];
+  const HATS = ['Nada', 'Gorra', 'Corona', 'Cuernos', 'Antena', 'Cresta', 'Halo'];
+  const CAPES = ['Capa', 'Bufanda', 'Nada', 'Alas', 'Propulsor'];
+  const BOT_NAMES = ['Voltio', 'Píxel', 'Neón', 'Glitch'];
+  const IT_HEX = 0xff3d9a;
+
+  // ================================================================
+  // Mapa (datos compartidos por la física y el render)
+  // ================================================================
+  // Plano de la "Estación Órbita": el mismo archivo con el que Blender construye el modelo 3D.
+  const LAYOUT = {"rooms":[{"id":"C","name":"Comedor","x0":-11,"x1":11,"z0":-8,"z1":8,"style":"cafe"},{"id":"P","name":"Puente de mando","x0":-8,"x1":8,"z0":16,"z1":30,"style":"bridge"},{"id":"O","name":"Oxígeno","x0":-32,"x1":-16,"z0":14,"z1":30,"style":"oxygen"},{"id":"R","name":"Reactor","x0":16,"x1":32,"z0":14,"z1":30,"style":"reactor"},{"id":"M","name":"Motores","x0":-33,"x1":-18,"z0":-7,"z1":7,"style":"engine"},{"id":"L","name":"Laboratorio","x0":18,"x1":33,"z0":-7,"z1":7,"style":"lab"},{"id":"S","name":"Seguridad","x0":-32,"x1":-16,"z0":-30,"z1":-14,"style":"security"},{"id":"A","name":"Almacén","x0":-10,"x1":10,"z0":-32,"z1":-16,"style":"storage"},{"id":"K","name":"Comunicaciones","x0":16,"x1":32,"z0":-30,"z1":-14,"style":"comms"},{"id":"E","name":"Sala de espera","x0":-10,"x1":10,"z0":42,"z1":56,"style":"lobby"}],"corridors":[{"id":"C-P","x0":-3,"x1":3,"z0":8,"z1":16},{"id":"C-A","x0":-3,"x1":3,"z0":-16,"z1":-8},{"id":"C-M","x0":-18,"x1":-11,"z0":-3,"z1":3},{"id":"C-L","x0":11,"x1":18,"z0":-3,"z1":3},{"id":"M-O","x0":-28,"x1":-22,"z0":7,"z1":14},{"id":"M-S","x0":-28,"x1":-22,"z0":-14,"z1":-7},{"id":"L-R","x0":22,"x1":28,"z0":7,"z1":14},{"id":"L-K","x0":22,"x1":28,"z0":-14,"z1":-7},{"id":"O-P","x0":-16,"x1":-8,"z0":20,"z1":26},{"id":"R-P","x0":8,"x1":16,"z0":20,"z1":26},{"id":"S-A","x0":-16,"x1":-10,"z0":-26,"z1":-20},{"id":"K-A","x0":10,"x1":16,"z0":-26,"z1":-20}],"walls":[{"x0":-11,"x1":11,"z0":-33,"z1":-32},{"x0":-11,"x1":-10,"z0":-32,"z1":-26},{"x0":10,"x1":11,"z0":-32,"z1":-26},{"x0":-33,"x1":-15,"z0":-31,"z1":-30},{"x0":15,"x1":33,"z0":-31,"z1":-30},{"x0":-33,"x1":-32,"z0":-30,"z1":-13},{"x0":-16,"x1":-15,"z0":-30,"z1":-26},{"x0":15,"x1":16,"z0":-30,"z1":-26},{"x0":32,"x1":33,"z0":-30,"z1":-13},{"x0":-15,"x1":-11,"z0":-27,"z1":-26},{"x0":11,"x1":15,"z0":-27,"z1":-26},{"x0":-16,"x1":-10,"z0":-20,"z1":-19},{"x0":10,"x1":16,"z0":-20,"z1":-19},{"x0":-16,"x1":-15,"z0":-19,"z1":-13},{"x0":-11,"x1":-10,"z0":-19,"z1":-15},{"x0":10,"x1":11,"z0":-19,"z1":-15},{"x0":15,"x1":16,"z0":-19,"z1":-13},{"x0":-10,"x1":-3,"z0":-16,"z1":-15},{"x0":3,"x1":10,"z0":-16,"z1":-15},{"x0":-4,"x1":-3,"z0":-15,"z1":-8},{"x0":3,"x1":4,"z0":-15,"z1":-8},{"x0":-32,"x1":-28,"z0":-14,"z1":-13},{"x0":-22,"x1":-16,"z0":-14,"z1":-13},{"x0":16,"x1":22,"z0":-14,"z1":-13},{"x0":28,"x1":32,"z0":-14,"z1":-13},{"x0":-29,"x1":-28,"z0":-13,"z1":-7},{"x0":-22,"x1":-21,"z0":-13,"z1":-7},{"x0":21,"x1":22,"z0":-13,"z1":-7},{"x0":28,"x1":29,"z0":-13,"z1":-7},{"x0":-12,"x1":-4,"z0":-9,"z1":-8},{"x0":4,"x1":12,"z0":-9,"z1":-8},{"x0":-34,"x1":-29,"z0":-8,"z1":-7},{"x0":-21,"x1":-17,"z0":-8,"z1":-7},{"x0":-12,"x1":-11,"z0":-8,"z1":-3},{"x0":11,"x1":12,"z0":-8,"z1":-3},{"x0":17,"x1":21,"z0":-8,"z1":-7},{"x0":29,"x1":34,"z0":-8,"z1":-7},{"x0":-34,"x1":-33,"z0":-7,"z1":8},{"x0":-18,"x1":-17,"z0":-7,"z1":-3},{"x0":17,"x1":18,"z0":-7,"z1":-3},{"x0":33,"x1":34,"z0":-7,"z1":8},{"x0":-17,"x1":-12,"z0":-4,"z1":-3},{"x0":12,"x1":17,"z0":-4,"z1":-3},{"x0":-18,"x1":-11,"z0":3,"z1":4},{"x0":11,"x1":18,"z0":3,"z1":4},{"x0":-18,"x1":-17,"z0":4,"z1":8},{"x0":-12,"x1":-11,"z0":4,"z1":9},{"x0":11,"x1":12,"z0":4,"z1":9},{"x0":17,"x1":18,"z0":4,"z1":8},{"x0":-33,"x1":-28,"z0":7,"z1":8},{"x0":-22,"x1":-18,"z0":7,"z1":8},{"x0":18,"x1":22,"z0":7,"z1":8},{"x0":28,"x1":33,"z0":7,"z1":8},{"x0":-29,"x1":-28,"z0":8,"z1":14},{"x0":-22,"x1":-21,"z0":8,"z1":14},{"x0":-11,"x1":-3,"z0":8,"z1":9},{"x0":3,"x1":11,"z0":8,"z1":9},{"x0":21,"x1":22,"z0":8,"z1":14},{"x0":28,"x1":29,"z0":8,"z1":14},{"x0":-4,"x1":-3,"z0":9,"z1":16},{"x0":3,"x1":4,"z0":9,"z1":16},{"x0":-33,"x1":-29,"z0":13,"z1":14},{"x0":-21,"x1":-15,"z0":13,"z1":14},{"x0":15,"x1":21,"z0":13,"z1":14},{"x0":29,"x1":33,"z0":13,"z1":14},{"x0":-33,"x1":-32,"z0":14,"z1":31},{"x0":-16,"x1":-15,"z0":14,"z1":20},{"x0":15,"x1":16,"z0":14,"z1":20},{"x0":32,"x1":33,"z0":14,"z1":31},{"x0":-9,"x1":-4,"z0":15,"z1":16},{"x0":4,"x1":9,"z0":15,"z1":16},{"x0":-9,"x1":-8,"z0":16,"z1":20},{"x0":8,"x1":9,"z0":16,"z1":20},{"x0":-15,"x1":-9,"z0":19,"z1":20},{"x0":9,"x1":15,"z0":19,"z1":20},{"x0":-16,"x1":-8,"z0":26,"z1":27},{"x0":8,"x1":16,"z0":26,"z1":27},{"x0":-16,"x1":-15,"z0":27,"z1":31},{"x0":-9,"x1":-8,"z0":27,"z1":31},{"x0":8,"x1":9,"z0":27,"z1":31},{"x0":15,"x1":16,"z0":27,"z1":31},{"x0":-32,"x1":-16,"z0":30,"z1":31},{"x0":-8,"x1":8,"z0":30,"z1":31},{"x0":16,"x1":32,"z0":30,"z1":31},{"x0":-11,"x1":11,"z0":41,"z1":42},{"x0":-11,"x1":-10,"z0":42,"z1":57},{"x0":10,"x1":11,"z0":42,"z1":57},{"x0":-10,"x1":10,"z0":56,"z1":57}],"props":[{"kind":"table","x":-6,"z":-4,"sx":3.0,"h":0.9,"sz":3.0,"y0":0.0},{"kind":"table","x":-6,"z":4,"sx":3.0,"h":0.9,"sz":3.0,"y0":0.0},{"kind":"table","x":6,"z":-4,"sx":3.0,"h":0.9,"sz":3.0,"y0":0.0},{"kind":"table","x":6,"z":4,"sx":3.0,"h":0.9,"sz":3.0,"y0":0.0},{"kind":"holo","x":0,"z":0,"sx":2.0,"h":1.2,"sz":2.0,"y0":0.0},{"kind":"counter","x":-7.5,"z":-7.2,"sx":5.0,"h":1.1,"sz":1.2,"y0":0.0},{"kind":"stage","x":0,"z":26,"sx":8.0,"h":0.8,"sz":4.0,"y0":0.0},{"kind":"console","x":-5.5,"z":29.2,"sx":2.6,"h":1.1,"sz":1.2,"y0":0.0,"face":"S"},{"kind":"console","x":5.5,"z":29.2,"sx":2.6,"h":1.1,"sz":1.2,"y0":0.0,"face":"S"},{"kind":"console","x":-7.2,"z":19,"sx":1.2,"h":1.1,"sz":2.6,"y0":0.0,"face":"E"},{"kind":"console","x":7.2,"z":19,"sx":1.2,"h":1.1,"sz":2.6,"y0":0.0,"face":"W"},{"kind":"planter","x":-28,"z":18,"sx":3.0,"h":0.8,"sz":6.0,"y0":0.0},{"kind":"planter","x":-20,"z":18,"sx":3.0,"h":0.8,"sz":6.0,"y0":0.0},{"kind":"tank","x":-30.5,"z":28.5,"sx":1.8,"h":2.2,"sz":1.8,"y0":0.0},{"kind":"tank","x":-17.5,"z":28.5,"sx":1.8,"h":2.2,"sz":1.8,"y0":0.0},{"kind":"reactor","x":24,"z":22,"sx":4.0,"h":6.0,"sz":4.0,"y0":0.0},{"kind":"platform","x":24,"z":18.6,"sx":6.0,"h":1.2,"sz":1.6,"y0":0.0},{"kind":"platform","x":24,"z":25.4,"sx":6.0,"h":1.2,"sz":1.6,"y0":0.0},{"kind":"platform","x":20.4,"z":22,"sx":1.6,"h":1.2,"sz":5.2,"y0":0.0},{"kind":"platform","x":27.6,"z":22,"sx":1.6,"h":1.2,"sz":5.2,"y0":0.0},{"kind":"step","x":24,"z":17.2,"sx":2.0,"h":0.6,"sz":1.2,"y0":0.0},{"kind":"step","x":24,"z":26.8,"sx":2.0,"h":0.6,"sz":1.2,"y0":0.0},{"kind":"engine","x":-26,"z":3.6,"sx":8.0,"h":2.4,"sz":3.0,"y0":0.0},{"kind":"engine","x":-26,"z":-3.6,"sx":8.0,"h":2.4,"sz":3.0,"y0":0.0},{"kind":"step","x":-21.4,"z":3.6,"sx":0.8,"h":1.2,"sz":2.0,"y0":0.0},{"kind":"step","x":-21.4,"z":-3.6,"sx":0.8,"h":1.2,"sz":2.0,"y0":0.0},{"kind":"tube","x":19.6,"z":-5.4,"sx":1.6,"h":2.6,"sz":1.6,"y0":0.0},{"kind":"tube","x":19.6,"z":5.4,"sx":1.6,"h":2.6,"sz":1.6,"y0":0.0},{"kind":"tube","x":31.4,"z":-5.4,"sx":1.6,"h":2.6,"sz":1.6,"y0":0.0},{"kind":"tube","x":31.4,"z":5.4,"sx":1.6,"h":2.6,"sz":1.6,"y0":0.0},{"kind":"desk","x":-24,"z":-15.8,"sx":6.0,"h":1.0,"sz":1.4,"y0":0.0,"face":"S"},{"kind":"crate","x":-30.2,"z":-28.2,"sx":1.6,"h":1.2,"sz":1.6,"y0":0.0,"tone":0},{"kind":"crate","x":-18.0,"z":-28.4,"sx":1.6,"h":0.8,"sz":1.6,"y0":0.0,"tone":1},{"kind":"mezz","x":0,"z":-30.25,"sx":10.0,"h":2.0,"sz":3.5,"y0":0.0},{"kind":"crate","x":-6.2,"z":-29.8,"sx":2.2,"h":1.0,"sz":2.2,"y0":0.0,"tone":0},{"kind":"crate","x":6.2,"z":-29.8,"sx":2.2,"h":1.0,"sz":2.2,"y0":0.0,"tone":1},{"kind":"crate","x":-6.0,"z":-21.0,"sx":2.0,"h":1.0,"sz":2.0,"y0":0.0,"tone":1},{"kind":"crate","x":-6.0,"z":-23.0,"sx":2.0,"h":2.0,"sz":2.0,"y0":0.0,"tone":0},{"kind":"crate","x":6.0,"z":-21.5,"sx":2.4,"h":1.2,"sz":2.4,"y0":0.0,"tone":2},{"kind":"barrel","x":2.0,"z":-24.0,"sx":1.4,"h":0.9,"sz":1.4,"y0":0.0},{"kind":"barrel","x":-2.5,"z":-18.2,"sx":1.4,"h":0.9,"sz":1.4,"y0":0.0},{"kind":"dish","x":28.0,"z":-26.0,"sx":3.0,"h":1.5,"sz":3.0,"y0":0.0},{"kind":"rack","x":18.2,"z":-29.0,"sx":3.6,"h":2.2,"sz":1.0,"y0":0.0},{"kind":"desk","x":24,"z":-15.8,"sx":5.0,"h":1.0,"sz":1.2,"y0":0.0,"face":"S"},{"kind":"bench","x":-8.8,"z":49,"sx":1.0,"h":0.5,"sz":6.0,"y0":0.0},{"kind":"bench","x":8.8,"z":49,"sx":1.0,"h":0.5,"sz":6.0,"y0":0.0},{"kind":"stage","x":0,"z":49,"sx":4.0,"h":0.6,"sz":4.0,"y0":0.0},{"kind":"locker","x":-9.45,"z":44.5,"sx":1.0,"h":2.2,"sz":3.0,"y0":0.0},{"kind":"locker","x":9.45,"z":44.5,"sx":1.0,"h":2.2,"sz":3.0,"y0":0.0},{"kind":"locker","x":-9.45,"z":53.5,"sx":1.0,"h":2.2,"sz":3.0,"y0":0.0},{"kind":"locker","x":9.45,"z":53.5,"sx":1.0,"h":2.2,"sz":3.0,"y0":0.0}],"doors":[{"id":"CP","x":0,"z":12,"sx":6.0,"sz":0.6},{"id":"CA","x":0,"z":-12,"sx":6.0,"sz":0.6}],"vents":[{"id":0,"x":-29.5,"z":-17.0,"to":1},{"id":1,"x":29.8,"z":28.0,"to":0},{"id":2,"x":-30.0,"z":25.0,"to":3},{"id":3,"x":30.0,"z":-17.0,"to":2},{"id":4,"x":-31.0,"z":-0.0,"to":5},{"id":5,"x":24.0,"z":-5.5,"to":4}],"grav":{"x0":21.5,"x1":29.5,"z0":-4.5,"z1":4.5,"y1":6.0},"spawns":[[-9,0],[0,19],[-24,23],[18,28],[-20,0],[25,0],[-24,-24],[22,-22],[0,-19]],"lobbySpawns":[[-5,45],[5,45],[-5,53],[5,53],[-3,46],[3,52],[-7,50],[7,47]],"lobbyC":[0,49],"orbs":[[0,1.2,0],[6,0.9,-4],[-9,0,-6],[9,0,6],[0,0.8,26],[-4,0,20],[4,0,22],[-28,0.8,18],[-20,0,26],[-24,0,16],[24,1.2,18.6],[24,1.2,25.4],[30,0,16],[-26,2.4,3.6],[-26,0,0],[-31,0,-6],[25,0,3],[32,0,0],[-24,1.0,-15.8],[-20,0,-26],[0,2.0,-30.25],[-6,2.0,-23],[6.2,1.0,-29.8],[0,0,-24],[28,1.5,-26],[24,0,-21],[0,0,14.5],[0,0,-14.5],[-15,0,0],[15,0,0],[-25,0,10],[25,0,-10]],"areas":[{"id":"C","name":"Comedor","x0":-11,"x1":11,"z0":-8,"z1":8},{"id":"P","name":"Puente de mando","x0":-8,"x1":8,"z0":16,"z1":30},{"id":"O","name":"Oxígeno","x0":-32,"x1":-16,"z0":14,"z1":30},{"id":"R","name":"Reactor","x0":16,"x1":32,"z0":14,"z1":30},{"id":"M","name":"Motores","x0":-33,"x1":-18,"z0":-7,"z1":7},{"id":"L","name":"Laboratorio","x0":18,"x1":33,"z0":-7,"z1":7},{"id":"S","name":"Seguridad","x0":-32,"x1":-16,"z0":-30,"z1":-14},{"id":"A","name":"Almacén","x0":-10,"x1":10,"z0":-32,"z1":-16},{"id":"K","name":"Comunicaciones","x0":16,"x1":32,"z0":-30,"z1":-14},{"id":"E","name":"Sala de espera","x0":-10,"x1":10,"z0":42,"z1":56},{"id":"C-P","name":"Pasillo","x0":-3,"x1":3,"z0":8,"z1":16},{"id":"C-A","name":"Pasillo","x0":-3,"x1":3,"z0":-16,"z1":-8},{"id":"C-M","name":"Pasillo","x0":-18,"x1":-11,"z0":-3,"z1":3},{"id":"C-L","name":"Pasillo","x0":11,"x1":18,"z0":-3,"z1":3},{"id":"M-O","name":"Pasillo","x0":-28,"x1":-22,"z0":7,"z1":14},{"id":"M-S","name":"Pasillo","x0":-28,"x1":-22,"z0":-14,"z1":-7},{"id":"L-R","name":"Pasillo","x0":22,"x1":28,"z0":7,"z1":14},{"id":"L-K","name":"Pasillo","x0":22,"x1":28,"z0":-14,"z1":-7},{"id":"O-P","name":"Pasillo","x0":-16,"x1":-8,"z0":20,"z1":26},{"id":"R-P","name":"Pasillo","x0":8,"x1":16,"z0":20,"z1":26},{"id":"S-A","name":"Pasillo","x0":-16,"x1":-10,"z0":-26,"z1":-20},{"id":"K-A","name":"Pasillo","x0":10,"x1":16,"z0":-26,"z1":-20}],"links":[[0,10,0.0,8],[0,11,0.0,-8],[0,12,-11,0.0],[0,13,11,0.0],[1,10,0.0,16],[1,18,-8,23.0],[1,19,8,23.0],[2,14,-25.0,14],[2,18,-16,23.0],[3,16,25.0,14],[3,19,16,23.0],[4,12,-18,0.0],[4,14,-25.0,7],[4,15,-25.0,-7],[5,13,18,0.0],[5,16,25.0,7],[5,17,25.0,-7],[6,15,-25.0,-14],[6,20,-16,-23.0],[7,11,0.0,-16],[7,20,-10,-23.0],[7,21,10,-23.0],[8,17,25.0,-14],[8,21,16,-23.0]],"wallCollideH":8.0,"wallVisH":3.0};
+  const BOXES = [];
+  const RAMPS = [];
+  const PROP_MAT = { crate: 'neon', mezz: 'neon', reactor: 'grav', tube: 'grav', engine: 'rubble', barrel: 'rubble' };
+  for (const w of LAYOUT.walls) BOXES.push({ x0: w.x0, x1: w.x1, y0: 0, y1: LAYOUT.wallCollideH, z0: w.z0, z1: w.z1, mat: 'wall', cond: '', vis: LAYOUT.wallVisH });
+  for (const p of LAYOUT.props) BOXES.push({ x0: p.x - p.sx / 2, x1: p.x + p.sx / 2, y0: p.y0, y1: p.y0 + p.h, z0: p.z - p.sz / 2, z1: p.z + p.sz / 2, mat: PROP_MAT[p.kind] || 'plat', cond: '', kind: p.kind });
+  for (const d of LAYOUT.doors) BOXES.push({ x0: d.x - d.sx / 2, x1: d.x + d.sx / 2, y0: 0, y1: LAYOUT.wallCollideH, z0: d.z - d.sz / 2, z1: d.z + d.sz / 2, mat: 'rubble', cond: 'door', vis: LAYOUT.wallVisH });
+
+  const GRAV = LAYOUT.grav;
+  const LIMIT = 60;
+  const SPAWNS = LAYOUT.spawns.map(([x, z]) => ({ x, y: 0, z }));
+  const LOBBY_SPAWNS = LAYOUT.lobbySpawns.map(([x, z]) => ({ x, y: 0, z }));
+  const LOBBY = LAYOUT.rooms.find((r) => r.id === 'E');
+  const LOBBY_C = { x: LAYOUT.lobbyC[0], z: LAYOUT.lobbyC[1] };
+  const ORB_POINTS = LAYOUT.orbs.map(([x, y, z]) => ({ x, y, z }));
+  const VENTS = LAYOUT.vents;
+  const AREAS = LAYOUT.areas;
+  const ROOM_COUNT = LAYOUT.rooms.length;
+  const inLobby = (x, z) => x > LOBBY.x0 && x < LOBBY.x1 && z > LOBBY.z0 && z < LOBBY.z1;
+
+  // Navegación de los bots: siguiente sala/pasillo en el camino más corto (precalculado)
+  const NAV = (() => {
+    const n = AREAS.length, adj = AREAS.map(() => []);
+    for (const [a, b, x, z] of LAYOUT.links) { adj[a].push({ to: b, x, z }); adj[b].push({ to: a, x, z }); }
+    const next = [];
+    for (let s = 0; s < n; s++) {
+      const prev = new Array(n).fill(-1); prev[s] = s;
+      const q = [s];
+      while (q.length) { const u = q.shift(); for (const e of adj[u]) if (prev[e.to] < 0) { prev[e.to] = u; q.push(e.to); } }
+      next.push(AREAS.map((_, t) => { if (prev[t] < 0 || t === s) return -1; let v = t; while (prev[v] !== s) v = prev[v]; return v; }));
+    }
+    return { adj, next };
+  })();
+  function areaAt(x, z) {
+    for (let i = 0; i < AREAS.length; i++) { const a = AREAS[i]; if (x >= a.x0 && x <= a.x1 && z >= a.z0 && z <= a.z1) return i; }
+    return -1;
+  }
+  function navPoint(fx, fz, tx, tz) {
+    const a = areaAt(fx, fz), b = areaAt(tx, tz);
+    if (a < 0 || b < 0 || a === b) return { x: tx, z: tz };
+    const nx = NAV.next[a][b];
+    const e = nx >= 0 ? NAV.adj[a].find((l) => l.to === nx) : null;
+    if (!e) return { x: tx, z: tz };
+    // apuntar un poco más allá de la puerta para cruzarla del todo
+    const A = AREAS[a], N = AREAS[nx];
+    if (e.x === A.x0 || e.x === A.x1) return { x: e.x + Math.sign((N.x0 + N.x1) / 2 - e.x) * 1.6, z: e.z };
+    return { x: e.x, z: e.z + Math.sign((N.z0 + N.z1) / 2 - e.z) * 1.6 };
+  }
+
+  function condOn(c, mask) {
+    if (!c) return true;
+    if (c === 'door') return !!(mask & 1);
+    return true;
+  }
+  const world = { mask: -1, boxes: [], ramps: [] };
+  function rebuildWorld(mask) {
+    world.mask = mask;
+    world.boxes = BOXES.filter((b) => condOn(b.cond, mask));
+    world.ramps = RAMPS.filter((r) => condOn(r.cond, mask));
+  }
+  rebuildWorld(0);
+  const rampH = (r, z) => r.h0 + (r.h1 - r.h0) * clamp((z - r.z0) / (r.z1 - r.z0), 0, 1);
+  const inRect = (x, z, b, m) => x > b.x0 - m && x < b.x1 + m && z > b.z0 - m && z < b.z1 + m;
+  function floorAt(x, z, maxY) {
+    let f = 0;
+    for (const b of world.boxes) if (inRect(x, z, b, 0.15) && b.y1 <= maxY && b.y1 > f) f = b.y1;
+    for (const r of world.ramps) if (inRect(x, z, r, 0.05)) { const h = rampH(r, z); if (h <= maxY && h > f) f = h; }
+    return f;
+  }
+  const inGrav = (s) => (world.mask & 4) && inRect(s.x, s.z, GRAV, 0) && s.y < GRAV.y1;
+
+  // ================================================================
+  // Física del personaje (la usan el jugador local y los bots)
+  // ================================================================
+  function newBody(x, y, z) {
+    return { x, y, z, vx: 0, vz: 0, vy: 0, ry: 0, fx: 0, fz: 1, grounded: false, jumps: 0, lastGround: -1e9,
+      dashT: 0, dashX: 0, dashZ: 1, dashUsed: 0, dashRe: 0 };
+  }
+  const baseMods = () => ({ speed: 1, agility: 1, jumps: 0, dash: 1 });   // un dash base; el orbe suma 2
+
+  function pushOut(s, b) {
+    const r = CFG.radius;
+    const cx = clamp(s.x, b.x0, b.x1), cz = clamp(s.z, b.z0, b.z1);
+    const dx = s.x - cx, dz = s.z - cz, d2 = dx * dx + dz * dz;
+    if (d2 > 1e-8) {
+      if (d2 >= r * r) return;
+      const d = Math.sqrt(d2), nx = dx / d, nz = dz / d;
+      s.x = cx + nx * r; s.z = cz + nz * r;
+      const vn = s.vx * nx + s.vz * nz;
+      if (vn < 0) { s.vx -= vn * nx; s.vz -= vn * nz; }
+    } else {
+      const l = s.x - b.x0, rr = b.x1 - s.x, d = s.z - b.z0, u = b.z1 - s.z, m = Math.min(l, rr, d, u);
+      if (m === l) { s.x = b.x0 - r; s.vx = Math.min(0, s.vx); }
+      else if (m === rr) { s.x = b.x1 + r; s.vx = Math.max(0, s.vx); }
+      else if (m === d) { s.z = b.z0 - r; s.vz = Math.min(0, s.vz); }
+      else { s.z = b.z1 + r; s.vz = Math.max(0, s.vz); }
+    }
+  }
+
+  function stepBody(s, wishX, wishZ, dt, mods, t) {
+    const speed = CFG.speed * mods.speed;
+    const ag = Math.max(0.1, CFG.agility * mods.agility);
+    let wl = Math.hypot(wishX, wishZ);
+    if (wl > 1) { wishX /= wl; wishZ /= wl; wl = 1; }
+    if (wl > 0.05) { s.fx = wishX / wl; s.fz = wishZ / wl; }
+
+    // Menos agilidad = tarda más en cambiar de dirección (curvas abiertas).
+    const accel = CFG.accel * ag * (s.grounded ? 1 : CFG.airControl);
+    let dvx = wishX * speed - s.vx, dvz = wishZ * speed - s.vz;
+    const dl = Math.hypot(dvx, dvz), maxd = accel * dt;
+    if (dl > maxd) { dvx *= maxd / dl; dvz *= maxd / dl; }
+    s.vx += dvx; s.vz += dvz;
+    if (wl > 0.05) s.ry = angleLerp(s.ry, Math.atan2(wishX, wishZ), clamp(CFG.turn * ag * dt, 0, 1));
+
+    let hx = s.vx, hz = s.vz;
+    if (s.dashT > 0) {
+      s.dashT -= dt; hx = s.dashX * CFG.dashSpeed; hz = s.dashZ * CFG.dashSpeed; s.vy = Math.max(s.vy, 0);
+    } else {
+      s.vy += CFG.gravity * (inGrav(s) ? -0.35 : 1) * dt;
+    }
+    s.vy = clamp(s.vy, -CFG.maxFall, CFG.maxFall);
+
+    const prevY = s.y;
+    s.x += hx * dt; s.z += hz * dt; s.y += s.vy * dt;
+
+    // Paredes: cajas y costados de rampas que están por encima del escalón.
+    for (const b of world.boxes) {
+      if (s.y >= b.y1 - CFG.step || s.y + CFG.height <= b.y0) continue;
+      pushOut(s, b);
+    }
+    for (const r of world.ramps) {
+      if (!inRect(s.x, s.z, r, CFG.radius)) continue;
+      const h = rampH(r, clamp(s.z, r.z0, r.z1));
+      if (s.y >= h - CFG.step || s.y + CFG.height <= h - 0.4) continue;
+      pushOut(s, r);
+    }
+    s.x = clamp(s.x, -LIMIT, LIMIT); s.z = clamp(s.z, -LIMIT, LIMIT);
+
+    // Techo
+    if (s.vy > 0) {
+      for (const b of world.boxes) {
+        if (inRect(s.x, s.z, b, 0) && prevY + CFG.height <= b.y0 + 0.01 && s.y + CFG.height > b.y0) { s.y = b.y0 - CFG.height; s.vy = 0; }
+      }
+    }
+
+    // Suelo (con subida de escalones y "pegado" al bajar rampas)
+    const floor = floorAt(s.x, s.z, Math.max(prevY, s.y) + CFG.step);
+    const wasGrounded = s.grounded;
+    if (s.y < floor) s.y = floor;
+    if (s.vy <= 0 && (s.y <= floor + 0.001 || (wasGrounded && s.dashT <= 0 && s.y - floor < 0.35))) {
+      s.y = floor; s.vy = 0; s.grounded = true; s.jumps = 0; s.lastGround = t;
+    } else {
+      s.grounded = false;
+    }
+
+    if (s.dashUsed > 0) { s.dashRe -= dt; if (s.dashRe <= 0) { s.dashUsed--; s.dashRe = CFG.dashRecharge; } }
+  }
+
+  function tryJump(s, mods, t) {
+    const max = 1 + mods.jumps;
+    const canGround = s.grounded || t - s.lastGround <= CFG.coyote;
+    if (!canGround && s.jumps === 0) s.jumps = 1;   // caer de un borde gasta el salto de suelo
+    if (s.jumps >= max) return false;
+    s.vy = CFG.jumpV; s.jumps++; s.lastGround = -1e9; s.grounded = false;
+    return true;
+  }
+  function tryDash(s, mods) {
+    if (s.dashT > 0 || s.dashUsed >= mods.dash) return false;
+    s.dashX = s.fx; s.dashZ = s.fz; s.dashT = CFG.dashDur;
+    if (s.dashUsed === 0) s.dashRe = CFG.dashRecharge;
+    s.dashUsed++;
+    return true;
+  }
+
+  // ================================================================
+  // Escena 3D
+  // ================================================================
+  const canvas = $('#view');
+  const renderer = new T.WebGLRenderer({ canvas, antialias: !isTouch, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouch ? 1.5 : 2));
+  const scene = new T.Scene();
+  const SKY = new T.Color(0x0b0a1a);
+  const FOG_COLOR = new T.Color(0x2a1f4a);
+  scene.background = SKY;
+  const camera = new T.PerspectiveCamera(62, 1, 0.1, 400);
+  const hemi = new T.HemisphereLight(0xc8c0ff, 0x1a1436, 0.95);
+  scene.add(hemi);
+  const sun = new T.DirectionalLight(0xffffff, 0.7);
+  sun.position.set(-20, 40, -10);
+  scene.add(sun);
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const MAT = {
+    plat: new T.MeshStandardMaterial({ color: 0x2e2563, emissive: 0x120838, roughness: 0.7, metalness: 0.1 }),
+    neon: new T.MeshStandardMaterial({ color: 0x14607d, emissive: 0x05384a, roughness: 0.5 }),
+    rubble: new T.MeshStandardMaterial({ color: 0x4a3a44, emissive: 0x140a10, roughness: 0.9 }),
+    wall: new T.MeshStandardMaterial({ color: 0x2a2850, emissive: 0x0a0820, roughness: 0.8 }),
+    grav: new T.MeshStandardMaterial({ color: 0x2bd46a, emissive: 0x0e7a3a, roughness: 0.5 }),
+  };
+  const EDGE = {
+    plat: new T.LineBasicMaterial({ color: 0xb48cff }),
+    neon: new T.LineBasicMaterial({ color: 0x35e0ff }),
+    rubble: new T.LineBasicMaterial({ color: 0x9a6a7a }),
+    wall: new T.LineBasicMaterial({ color: 0x6a5fb0 }),
+    grav: new T.LineBasicMaterial({ color: 0x6dff7a }),
+  };
+  const condMeshes = [];
+  function addMesh(geo, mat, x, y, z, cond) {
+    const m = new T.Mesh(geo, MAT[mat]);
+    m.position.set(x, y, z);
+    m.add(new T.LineSegments(new T.EdgesGeometry(geo), EDGE[mat]));
+    scene.add(m);
+    if (cond) condMeshes.push({ m, cond });
+    return m;
+  }
+  // Mapa simple (se ve solo si el modelo de Blender no carga)
+  const fallbackMeshes = [];
+  for (const b of BOXES) {
+    const h = b.vis || (b.y1 - b.y0);
+    fallbackMeshes.push(addMesh(new T.BoxGeometry(b.x1 - b.x0, h, b.z1 - b.z0), b.mat, (b.x0 + b.x1) / 2, b.y0 + h / 2, (b.z0 + b.z1) / 2, b.cond));
+  }
+  {
+    const fm = new T.MeshStandardMaterial({ color: 0x2a2660, roughness: 0.9 });
+    for (const a of AREAS) {
+      const f = new T.Mesh(new T.PlaneGeometry(a.x1 - a.x0, a.z1 - a.z0), fm);
+      f.rotation.x = -Math.PI / 2; f.position.set((a.x0 + a.x1) / 2, 0.004, (a.z0 + a.z1) / 2);
+      scene.add(f); fallbackMeshes.push(f);
+    }
+  }
+  // El espacio de fondo
+  const ground = new T.Mesh(new T.PlaneGeometry(400, 400), new T.MeshStandardMaterial({ color: 0x06051a, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = -0.05;
+  scene.add(ground);
+  // Estrellas
+  {
+    const pts = [];
+    for (let i = 0; i < 520; i++) {
+      const a = Math.random() * Math.PI * 2, e = Math.random() * 0.5 + 0.05, d = 170;
+      pts.push(Math.cos(a) * Math.cos(e) * d, Math.sin(e) * d, Math.sin(a) * Math.cos(e) * d + 10);
+    }
+    const g = new T.BufferGeometry();
+    g.setAttribute('position', new T.Float32BufferAttribute(pts, 3));
+    scene.add(new T.Points(g, new T.PointsMaterial({ color: 0xc8c0ff, size: 0.9, sizeAttenuation: true, fog: false })));
+  }
+  // Zona de gravedad invertida (versión simple)
+  const gravZone = new T.Group();
+  {
+    const g = new T.BoxGeometry(GRAV.x1 - GRAV.x0, GRAV.y1, GRAV.z1 - GRAV.z0);
+    const m = new T.Mesh(g, new T.MeshBasicMaterial({ color: 0x6dff7a, transparent: true, opacity: 0.1, depthWrite: false }));
+    m.add(new T.LineSegments(new T.EdgesGeometry(g), EDGE.grav));
+    m.position.set((GRAV.x0 + GRAV.x1) / 2, GRAV.y1 / 2, (GRAV.z0 + GRAV.z1) / 2);
+    gravZone.add(m);
+    scene.add(gravZone);
+  }
+
+  // ---------------- Estación modelada en Blender (station.json) ----------------
+  const STATION = { ready: false, root: null, doors: [], gravField: null, ventMat: null, holo: null, rings: null, ringsY: 0 };
+  function makeTex(draw, w, h) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    draw(c.getContext('2d'), w, h);
+    return new T.CanvasTexture(c);
+  }
+  const tileTex = makeTex((g, w, h) => {
+    g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
+    g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(0, 0, w, 3); g.fillRect(0, 0, 3, h);
+    g.strokeStyle = 'rgba(0,0,0,0.07)'; g.lineWidth = 2; g.strokeRect(16, 16, w - 32, h - 32);
+    g.fillStyle = 'rgba(0,0,0,0.12)';
+    for (const [x, y] of [[10, 10], [w - 10, 10], [10, h - 10], [w - 10, h - 10]]) { g.beginPath(); g.arc(x, y, 2.5, 0, 7); g.fill(); }
+  }, 128, 128);
+  tileTex.wrapS = tileTex.wrapT = T.RepeatWrapping;
+  tileTex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  const starTex = makeTex((g, w, h) => {
+    g.fillStyle = '#02030b'; g.fillRect(0, 0, w, h);
+    const gr = g.createRadialGradient(w * 0.7, h * 0.45, 4, w * 0.7, h * 0.45, h * 0.9);
+    gr.addColorStop(0, 'rgba(120,80,255,0.45)'); gr.addColorStop(1, 'rgba(120,80,255,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < 170; i++) {
+      g.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.7})`;
+      g.beginPath(); g.arc(Math.random() * w, Math.random() * h, Math.random() * 1.5 + 0.3, 0, 7); g.fill();
+    }
+    g.fillStyle = '#ff8a5c'; g.beginPath(); g.arc(w * 0.18, h * 0.78, h * 0.26, 0, 7); g.fill();
+    g.fillStyle = 'rgba(10,0,30,0.4)'; g.beginPath(); g.arc(w * 0.22, h * 0.72, h * 0.26, 0, 7); g.fill();
+  }, 512, 160);
+  function signTex(text, sub) {
+    const tx = makeTex((g, w, h) => {
+      g.fillStyle = '#0d0b26'; g.fillRect(0, 0, w, h);
+      g.strokeStyle = '#35e0ff'; g.lineWidth = 6; g.strokeRect(5, 5, w - 10, h - 10);
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillStyle = '#f2efff'; g.font = '700 50px "Chakra Petch", system-ui, sans-serif';
+      g.fillText(text.toUpperCase(), w / 2, sub ? h * 0.38 : h / 2, w - 40);
+      if (sub) { g.fillStyle = '#35e0ff'; g.font = '600 28px "Chakra Petch", system-ui, sans-serif'; g.fillText(sub, w / 2, h * 0.74, w - 40); }
+    }, 512, 128);
+    tx.repeat.y = -1; tx.offset.y = 1;   // los carteles salen de Blender con las coordenadas giradas
+    return tx;
+  }
+  function prepPivot(node) {
+    if (!node || !node.parent) return null;
+    const c = new T.Box3().setFromObject(node).getCenter(new T.Vector3());
+    const pivot = new T.Group(); pivot.position.copy(c);
+    node.parent.add(pivot); pivot.add(node);
+    node.position.sub(c);
+    node.traverse((o) => { o.matrixAutoUpdate = true; });
+    return pivot;
+  }
+  function loadStation() {
+    if (!T.GLTFLoader) return;
+    new T.GLTFLoader().load('station.json', (gltf) => {
+      const root = gltf.scene;
+      const done = new Set();
+      // Materiales Lambert (más baratos que los PBR): el mapa es grande y debe ir fluido en el celular
+      const lam = new Map();
+      const toLambert = (m) => {
+        if (!m || !m.isMeshStandardMaterial) return m;
+        if (lam.has(m)) return lam.get(m);
+        const l = new T.MeshLambertMaterial({ name: m.name, color: m.color, emissive: m.emissive, emissiveIntensity: m.emissiveIntensity,
+          transparent: m.transparent, opacity: m.opacity, side: m.side });
+        lam.set(m, l);
+        return l;
+      };
+      root.traverse((ob) => {
+        if (!ob.isMesh) return;
+        ob.material = Array.isArray(ob.material) ? ob.material.map(toLambert) : toLambert(ob.material);
+        const list = Array.isArray(ob.material) ? ob.material : [ob.material];
+        for (const m of list) {
+          if (!m || done.has(m)) continue;
+          done.add(m);
+          // Blender guarda los colores en espacio lineal; el juego los pinta tal cual
+          if (m.color) m.color.convertLinearToSRGB();
+          if (m.emissive) m.emissive.convertLinearToSRGB();
+          const n = m.name || '';
+          if (n.startsWith('Floor_')) { m.map = tileTex; m.color.multiplyScalar(n === 'Floor_lab' || n === 'Floor_cafe' ? 0.64 : 0.78); m.needsUpdate = true; }
+          else if (n === 'Window') { m.color.setHex(0x000000); m.emissive.setHex(0xffffff); m.emissiveMap = starTex; m.needsUpdate = true; }
+          else if (n.startsWith('Sign_')) {
+            const id = n.slice(5), r = LAYOUT.rooms.find((q) => q.id === id);
+            const tx = id === 'E' ? signTex('Sala de espera', 'TagVerse · Estación Órbita') : signTex(r ? r.name : id);
+            m.color.setHex(0x000000); m.emissive.setHex(0xffffff); m.emissiveMap = tx; m.needsUpdate = true;
+          } else if (n === 'VentGlow') STATION.ventMat = m;
+          if (n === 'Glass' || n === 'Holo' || n === 'GravField') { m.transparent = true; m.depthWrite = false; }
+        }
+        ob.matrixAutoUpdate = false; ob.updateMatrix();
+      });
+      root.updateMatrixWorld(true);
+      STATION.doors = ['Door_CP', 'Door_CA'].map((n) => root.getObjectByName(n)).filter(Boolean);
+      STATION.gravField = root.getObjectByName('GravField');
+      STATION.holo = prepPivot(root.getObjectByName('HoloSpin'));
+      STATION.rings = prepPivot(root.getObjectByName('ReactorRings'));
+      if (STATION.rings) STATION.ringsY = STATION.rings.position.y;
+      scene.add(root);
+      STATION.root = root; STATION.ready = true;
+      for (const m of fallbackMeshes) m.visible = false;
+      applyMutationVisuals(world.mask);
+    }, undefined, (err) => { console.warn('station.json no cargó; se usa el mapa simple', err); });
+  }
+  function stationTick(t, dt) {
+    if (!STATION.ready) return;
+    if (STATION.holo) { STATION.holo.rotation.y += dt * 0.9; }
+    if (STATION.rings) STATION.rings.position.y = STATION.ringsY + Math.sin(t * 0.0015) * 0.35;
+    if (STATION.ventMat && (world.mask & 2)) STATION.ventMat.emissiveIntensity = 0.6 + 0.4 * Math.sin(t * 0.008);
+  }
+
+  const DARK_FOG = new T.Color(0x03040b);
+  function applyMutationVisuals(mask) {
+    for (const c of condMeshes) c.m.visible = condOn(c.cond, mask) && !STATION.ready;
+    gravZone.visible = !!(mask & 4) && !STATION.ready;
+    if (STATION.ready) {
+      for (const d of STATION.doors) d.visible = !!(mask & 1);
+      if (STATION.gravField) STATION.gravField.visible = !!(mask & 4);
+      if (STATION.ventMat) { STATION.ventMat.emissive.setHex(mask & 2 ? 0x6dff7a : 0x000000); STATION.ventMat.emissiveIntensity = 1; }
+    }
+    // Apagón: solo se ve lo que está cerca, como con una linterna
+    if (mask & 8) { scene.fog = new T.FogExp2(DARK_FOG, 0.085); scene.background = DARK_FOG; hemi.intensity = 0.35; sun.intensity = 0.15; }
+    else { scene.fog = null; scene.background = SKY; hemi.intensity = 0.95; sun.intensity = 0.7; }
+  }
+  applyMutationVisuals(0);
+
+  // ---------------- Avatares ----------------
+  // Corredor cibernético: traje oscuro, piezas del color del jugador, ribetes de neón,
+  // casco con visor y ojos, piernas y brazos articulados que se animan al correr y saltar.
+  const cylY = (rt, rb, h, seg, oy) => { const g = new T.CylinderGeometry(rt, rb, h, seg || 12); g.translate(0, oy, 0); return g; };
+  const GEO = {
+    thigh: cylY(0.1, 0.085, 0.4, 12, -0.2),
+    shin: cylY(0.085, 0.07, 0.34, 12, -0.17),
+    shoe: (() => { const g = new T.BoxGeometry(0.2, 0.12, 0.32); g.translate(0, 0, 0.05); return g; })(),
+    sole: (() => { const g = new T.BoxGeometry(0.215, 0.035, 0.335); g.translate(0, 0, 0.05); return g; })(),
+    knee: new T.SphereGeometry(0.088, 10, 8),
+    pelvis: new T.SphereGeometry(0.2, 14, 10),
+    belt: new T.TorusGeometry(0.215, 0.028, 6, 26),
+    torso: new T.CylinderGeometry(0.27, 0.2, 0.5, 16),
+    chest: new T.BoxGeometry(0.34, 0.2, 0.08),
+    stripe: new T.BoxGeometry(0.3, 0.028, 0.09),
+    core: new T.BoxGeometry(0.28, 0.32, 0.12),
+    coreGlow: new T.BoxGeometry(0.06, 0.24, 0.13),
+    pad: new T.SphereGeometry(0.12, 12, 8),
+    upperArm: cylY(0.075, 0.065, 0.3, 10, -0.15),
+    foreArm: cylY(0.065, 0.058, 0.26, 10, -0.13),
+    glove: new T.SphereGeometry(0.085, 10, 8),
+    neck: new T.CylinderGeometry(0.08, 0.1, 0.12, 10),
+    head: new T.SphereGeometry(0.25, 20, 14),
+    visor: new T.CylinderGeometry(0.258, 0.258, 0.13, 20, 1, true, -1.15, 2.3),
+    eye: new T.SphereGeometry(0.045, 8, 6),
+    ear: new T.CylinderGeometry(0.075, 0.075, 0.06, 14),
+    // Cabeza
+    cap: new T.CylinderGeometry(0.255, 0.27, 0.13, 18),
+    brim: new T.BoxGeometry(0.3, 0.03, 0.24),
+    crown: new T.CylinderGeometry(0.2, 0.24, 0.2, 8, 1, true),
+    gem: new T.OctahedronGeometry(0.05, 0),
+    horn: new T.ConeGeometry(0.065, 0.32, 10),
+    stick: new T.CylinderGeometry(0.018, 0.018, 0.36, 6),
+    ball: new T.SphereGeometry(0.07, 10, 8),
+    spike: new T.ConeGeometry(0.06, 0.2, 4),
+    halo: new T.TorusGeometry(0.2, 0.025, 6, 30),
+    // Espalda
+    cape: (() => { const g = new T.PlaneGeometry(0.62, 1.0, 1, 4); g.translate(0, -0.5, 0); return g; })(),
+    scarf: (() => { const g = new T.BoxGeometry(0.12, 0.62, 0.04); g.translate(0, -0.31, 0); return g; })(),
+    scarfRing: new T.TorusGeometry(0.15, 0.055, 8, 20),
+    wing: (() => {
+      const s = new T.Shape();
+      s.moveTo(0, 0); s.lineTo(0.75, 0.32); s.lineTo(0.62, 0.05); s.lineTo(0.8, -0.12); s.lineTo(0.5, -0.12); s.lineTo(0.58, -0.32); s.lineTo(0, -0.08);
+      return new T.ShapeGeometry(s);
+    })(),
+    tank: new T.CylinderGeometry(0.08, 0.08, 0.36, 12),
+    nozzle: new T.ConeGeometry(0.07, 0.12, 12, 1, true),
+    flame: (() => { const g = new T.ConeGeometry(0.06, 0.3, 10); g.rotateX(Math.PI); g.translate(0, -0.15, 0); return g; })(),
+    // Efectos
+    aura: new T.RingGeometry(0.75, 1.15, 40),
+    shield: new T.TorusGeometry(0.85, 0.05, 8, 40),
+    shadow: new T.CircleGeometry(0.5, 20),
+    orb: new T.IcosahedronGeometry(0.34, 0),
+    orbRing: new T.TorusGeometry(0.55, 0.03, 6, 30),
+  };
+  const MAT_EYE = new T.MeshBasicMaterial({ color: 0xffffff });
+  const MAT_GOLD = new T.MeshStandardMaterial({ color: 0xffd23d, emissive: 0x8a6400, metalness: 0.6, roughness: 0.3, side: T.DoubleSide });
+  const MAT_HORN = new T.MeshStandardMaterial({ color: 0xff3d9a, emissive: 0x7a0a40 });
+  const MAT_ANT = new T.MeshStandardMaterial({ color: 0x35e0ff, emissive: 0x35e0ff, emissiveIntensity: 1.2 });
+  const MAT_HALO = new T.MeshBasicMaterial({ color: 0xfff3b0 });
+  const MAT_METAL = new T.MeshStandardMaterial({ color: 0x8c88a8, metalness: 0.8, roughness: 0.3 });
+  const MAT_FLAME = new T.MeshBasicMaterial({ color: 0xffb03d, transparent: true, opacity: 0.85, blending: T.AdditiveBlending, depthWrite: false });
+  const MAT_AURA = new T.MeshBasicMaterial({ color: IT_HEX, transparent: true, opacity: 0.75, side: T.DoubleSide, depthWrite: false });
+  const MAT_SHIELD = new T.MeshBasicMaterial({ color: 0xb48cff });
+  const MAT_SHADOW = new T.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45, depthWrite: false });
+  const TRAIL_N = 14;
+
+  function makeLabel() {
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 64;
+    const tex = new T.CanvasTexture(c);
+    const spr = new T.Sprite(new T.SpriteMaterial({ map: tex, depthWrite: false, transparent: true }));
+    spr.scale.set(2.2, 0.55, 1);
+    spr.position.y = 2.55;
+    spr.renderOrder = 10;
+    return { spr, c, tex, key: '' };
+  }
+  function drawLabel(lb, text, it, mine) {
+    const key = text + '|' + it + '|' + mine;
+    if (lb.key === key) return;
+    lb.key = key;
+    const g = lb.c.getContext('2d');
+    g.clearRect(0, 0, 256, 64);
+    g.font = '700 30px "Chakra Petch", system-ui, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    const w = Math.min(240, g.measureText(text).width + 28);
+    g.fillStyle = it ? 'rgba(255,61,154,0.92)' : 'rgba(16,12,40,0.78)';
+    const x = 128 - w / 2;
+    g.beginPath();
+    if (g.roundRect) g.roundRect(x, 10, w, 44, 14); else g.rect(x, 10, w, 44);
+    g.fill();
+    if (mine && !it) { g.strokeStyle = '#35e0ff'; g.lineWidth = 3; g.stroke(); }
+    g.fillStyle = it ? '#1a0410' : '#f2efff';
+    g.fillText(text, 128, 33, 226);
+    lb.tex.needsUpdate = true;
+  }
+
+
+  // ---------------- Personaje modelado en Blender (runner.glb) ----------------
+  // Se carga en segundo plano. Mientras tanto (o si falla) se usa el personaje armado con figuras.
+  const RUNNER = { ready: false, scene: null, clips: {} };
+  const HAT_NODES = [null, 'Hat_Gorra', 'Hat_Corona', 'Hat_Cuernos', 'Hat_Antena', 'Hat_Cresta', 'Hat_Halo'];
+  const BACK_NODES = ['Back_Capa', 'Back_Bufanda', null, 'Back_Alas', 'Back_Propulsor'];
+  const ACC_NODES = ['Hat_Gorra', 'Hat_Corona', 'Hat_Cuernos', 'Hat_Antena', 'Hat_Cresta', 'Hat_Halo', 'Back_Capa', 'Back_Bufanda', 'Back_Alas', 'Back_Propulsor', 'Back_Nucleo', 'FlameL', 'FlameR'];
+  function loadRunner() {
+    if (!T.GLTFLoader || !T.SkeletonUtils) return;
+    new T.GLTFLoader().load('runner.json', (gltf) => {
+      gltf.scene.traverse((ob) => {
+        if (!ob.isMesh) return;
+        ob.frustumCulled = false;   // la malla con esqueleto se mueve fuera de su caja original
+        const m = ob.material;
+        if (m && m.isMeshStandardMaterial) {
+          m.metalness = Math.min(m.metalness, m.name === 'Gold' || m.name === 'Metal' ? 0.45 : 0.3);
+          if (m.name === 'Gold') { m.emissive.setHex(0x6a4a00); }
+          if (m.name === 'Visor') { m.roughness = 0.2; }
+        }
+      });
+      for (const c of gltf.animations) RUNNER.clips[c.name] = c;
+      RUNNER.scene = gltf.scene;
+      RUNNER.ready = !!(RUNNER.clips.Idle && RUNNER.clips.Run);
+      // Rehacer los avatares que ya existían con el modelo nuevo
+      if (RUNNER.ready) for (const [id, av] of avatars) { if (!av.glb) { disposeAvatar(av); avatars.delete(id); } }
+    }, undefined, (err) => { console.warn('runner.json no cargó; se usa el personaje simple', err); });
+  }
+
+  function makeGlbAvatar(lk) {
+    const root = new T.Group();
+    const model = new T.Group();
+    root.add(model);
+    const glb = T.SkeletonUtils.clone(RUNNER.scene);
+    model.add(glb);
+    const color = new T.Color(COLORS[lk.c] || COLORS[0]);
+    const trimColor = color.clone().lerp(new T.Color(0xffffff), 0.25);
+    const mats = [];
+    const cache = {};
+    // Cada jugador tiene su copia de los materiales que llevan su color
+    const tint = {
+      Suit: (m) => { m.color.setHex(0x2a2452).lerp(color, 0.18); m.metalness = 0.2; m.roughness = 0.55; },
+      Accent: (m) => { m.color.copy(color); m.emissive.copy(color); m.emissiveIntensity = 0.12; m.roughness = 0.4; },
+      Trim: (m) => { m.color.copy(trimColor); m.emissive.copy(trimColor); m.emissiveIntensity = 1; },
+      Cap: (m) => { m.color.copy(color).multiplyScalar(0.4); m.emissive.setHex(0x000000); },
+      Cape: (m) => { m.color.copy(color).multiplyScalar(0.6); m.emissive.copy(color).multiplyScalar(0.18); m.emissiveIntensity = 1; m.side = T.DoubleSide; },
+      Wing: (m) => { m.color.copy(trimColor); m.emissive.copy(trimColor); m.emissiveIntensity = 0.7; m.transparent = true; m.opacity = 0.6; m.depthWrite = false; m.side = T.DoubleSide; },
+      Visor: (m) => { m.emissive.copy(color).lerp(new T.Color(0xffffff), 0.4); m.emissiveIntensity = 0.12; },
+      Eyes: (m) => { m.color.setHex(0xffffff); m.emissive.setHex(0xffffff); m.emissiveIntensity = 1; },
+      Flame: (m) => { m.transparent = true; m.opacity = 0.9; m.blending = T.AdditiveBlending; m.depthWrite = false; },
+    };
+    glb.traverse((ob) => {
+      if (!ob.isMesh) return;
+      const name = ob.material && ob.material.name;
+      if (tint[name]) {
+        if (!cache[name]) { const m = ob.material.clone(); tint[name](m); cache[name] = m; mats.push(m); }
+        ob.material = cache[name];
+      }
+    });
+    // Solo el gorro y la espalda elegidos; lo demás se quita para no gastar
+    const keep = new Set([HAT_NODES[lk.h], BACK_NODES[lk.k]]);
+    if (lk.k !== 4) keep.add('Back_Nucleo'); else { keep.add('FlameL'); keep.add('FlameR'); }
+    for (const n of ACC_NODES) {
+      const node = glb.getObjectByName(n);
+      if (node && !keep.has(n)) node.parent.remove(node);
+    }
+    const flames = lk.k === 4 ? ['FlameL', 'FlameR'].map((n) => glb.getObjectByName(n)).filter(Boolean) : [];
+    // Huesos que anima el juego (capa, bufanda, alas)
+    glb.updateMatrixWorld(true);
+    const glbQ = new T.Quaternion(); glb.getWorldQuaternion(glbQ);
+    const extra = (name, axis) => {
+      const b = glb.getObjectByName(name);
+      if (!b || !b.parent) return null;
+      const pq = new T.Quaternion(); b.parent.getWorldQuaternion(pq);
+      const ax = axis.clone().applyQuaternion(glbQ).applyQuaternion(pq.invert()).normalize();
+      return { b, rest: b.quaternion.clone(), ax };
+    };
+    const capeBone = lk.k === 0 ? extra('Cape', new T.Vector3(1, 0, 0)) : lk.k === 1 ? extra('Scarf', new T.Vector3(1, 0, 0)) : null;
+    const wingBones = lk.k === 3 ? [extra('WingL', new T.Vector3(0, 1, 0)), extra('WingR', new T.Vector3(0, 1, 0))] : null;
+
+    const mixer = new T.AnimationMixer(glb);
+    const acts = {};
+    for (const n of ['Idle', 'Run', 'Jump', 'Dash', 'Cheer']) {
+      if (!RUNNER.clips[n]) continue;
+      const a = mixer.clipAction(RUNNER.clips[n]);
+      a.setLoop(T.LoopRepeat); acts[n] = a;
+    }
+    acts.Idle.play();
+
+    const aura = new T.Mesh(GEO.aura, MAT_AURA);
+    aura.rotation.x = -Math.PI / 2; aura.position.y = 0.05; aura.visible = false;
+    root.add(aura);
+    const shield = new T.Mesh(GEO.shield, MAT_SHIELD);
+    shield.position.y = 1.0; shield.rotation.x = Math.PI / 2; shield.visible = false;
+    model.add(shield);
+    const shadow = new T.Mesh(GEO.shadow, MAT_SHADOW);
+    shadow.rotation.x = -Math.PI / 2;
+    const label = makeLabel();
+    root.add(label.spr);
+    const tGeo = new T.BufferGeometry();
+    tGeo.setAttribute('position', new T.Float32BufferAttribute(new Float32Array(TRAIL_N * 6), 3));
+    tGeo.setAttribute('color', new T.Float32BufferAttribute(new Float32Array(TRAIL_N * 6), 3));
+    const idx = [];
+    for (let i = 0; i < TRAIL_N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    tGeo.setIndex(idx);
+    const trailMat = new T.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide });
+    mats.push(trailMat);
+    const trail = new T.Mesh(tGeo, trailMat);
+    trail.frustumCulled = false; trail.visible = false;
+    return { glb: true, root, model, mixer, acts, cur: 'Idle', capeBone, wingBones, flames,
+      bodyMat: cache.Accent || new T.MeshStandardMaterial(), trimMat: cache.Trim || new T.MeshStandardMaterial(),
+      visorMat: cache.Visor || new T.MeshStandardMaterial(), mats, color, trimColor, visorColor: (cache.Visor ? cache.Visor.emissive.clone() : new T.Color()),
+      aura, shield, shadow, label, trail, trailPts: [], trailT: 0,
+      scale: 1, speed: 0, run: 0, air: 0, swing: 0, px: 0, pz: 0, dx: 0, dy: 0, dz: 0, dry: 0, fresh: true, phase: Math.random() * 6, key: '' };
+  }
+
+  const QTMP = new T.Quaternion();
+  function animateGlb(av, o, t, dt, inAir, dash) {
+    // Elegir animación según lo que hace el personaje y mezclarla suavemente
+    let want = 'Idle';
+    if (o.cheer && av.speed < 1.5 && !inAir) want = 'Cheer';
+    else if (av.air > 0.5) want = 'Jump';
+    else if (dash > 0.25 && av.acts.Dash) want = 'Dash';
+    else if (av.speed > 0.9) want = 'Run';
+    if (!av.acts[want]) want = 'Idle';
+    if (want !== av.cur) {
+      const next = av.acts[want], prev = av.acts[av.cur];
+      next.reset().setEffectiveWeight(1).fadeIn(0.18).play();
+      if (prev) prev.fadeOut(0.18);
+      av.cur = want;
+    }
+    if (av.acts.Run) av.acts.Run.timeScale = clamp(av.speed / CFG.speed, 0.55, 1.7);
+    av.mixer.update(dt);
+    av.trimMat.emissive.copy(av.trimMat.color);
+    if (av.capeBone) {
+      const target = clamp(av.speed * 0.13, 0, 1.15) + av.air * 0.45 + Math.sin(t * 0.012 * (1 + av.speed * 0.3) + av.phase) * 0.05 * (0.3 + av.speed * 0.15);
+      av.swing = lerp(av.swing, target, 0.15);
+      QTMP.setFromAxisAngle(av.capeBone.ax, av.swing);
+      av.capeBone.b.quaternion.copy(QTMP).multiply(av.capeBone.rest);
+    }
+    if (av.wingBones) {
+      const flap = Math.sin(t * (0.004 + av.air * 0.014) + av.phase) * (0.12 + av.air * 0.35) - Math.min(1, av.speed / CFG.speed) * 0.2;
+      av.wingBones.forEach((w, i) => {
+        if (!w) return;
+        QTMP.setFromAxisAngle(w.ax, (i ? -1 : 1) * flap);
+        w.b.quaternion.copy(QTMP).multiply(w.rest);
+      });
+    }
+    if (av.flames.length) {
+      const on = av.air > 0.2 || dash > 0.1;
+      for (const fl of av.flames) { fl.visible = on; if (on) fl.material.opacity = 0.55 + Math.random() * 0.45; }
+    }
+  }
+
+  function makeAvatar(lk) {
+    return RUNNER.ready ? makeGlbAvatar(lk) : makeProcAvatar(lk);
+  }
+
+  function makeProcAvatar(lk) {
+    const root = new T.Group();
+    const model = new T.Group();          // gira hacia donde mira el jugador
+    const rig = new T.Group();            // se inclina y rebota al correr
+    root.add(model); model.add(rig);
+    const color = new T.Color(COLORS[lk.c] || COLORS[0]);
+    const mats = [];
+    const own = (m) => { mats.push(m); return m; };
+    const bodyMat = own(new T.MeshStandardMaterial({ color, emissive: color.clone(), emissiveIntensity: 0.12, roughness: 0.4, metalness: 0.25 }));
+    const suitMat = own(new T.MeshStandardMaterial({ color: new T.Color(0x2a2452).lerp(color, 0.2), roughness: 0.55, metalness: 0.3 }));
+    const trimMat = own(new T.MeshBasicMaterial({ color: color.clone().lerp(new T.Color(0xffffff), 0.25) }));
+    const visorMat = own(new T.MeshStandardMaterial({ color: 0x090818, emissive: color.clone().lerp(new T.Color(0xffffff), 0.4), emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.15, side: T.DoubleSide }));
+    const add = (parent, geo, mat, x, y, z) => { const m = new T.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m; };
+
+    // Piernas (cadera -> rodilla -> zapato)
+    const legs = [-1, 1].map((sd) => {
+      const hip = new T.Group(); hip.position.set(0.13 * sd, 0.78, 0); rig.add(hip);
+      add(hip, GEO.thigh, suitMat, 0, 0, 0);
+      const knee = new T.Group(); knee.position.set(0, -0.4, 0); hip.add(knee);
+      add(knee, GEO.knee, suitMat, 0, 0, 0);
+      add(knee, GEO.shin, suitMat, 0, 0, 0);
+      add(knee, GEO.shoe, bodyMat, 0, -0.32, 0);
+      add(knee, GEO.sole, trimMat, 0, -0.385, 0);
+      return { hip, knee };
+    });
+    // Tronco
+    add(rig, GEO.pelvis, suitMat, 0, 0.84, 0).scale.set(1.15, 0.7, 0.9);
+    const belt = add(rig, GEO.belt, trimMat, 0, 0.88, 0); belt.rotation.x = Math.PI / 2;
+    const torso = add(rig, GEO.torso, bodyMat, 0, 1.12, 0);
+    add(rig, GEO.chest, suitMat, 0, 1.18, 0.19);
+    add(rig, GEO.stripe, trimMat, 0, 1.13, 0.2);
+    // Brazos (hombro -> codo -> guante)
+    const arms = [-1, 1].map((sd) => {
+      add(rig, GEO.pad, bodyMat, 0.3 * sd, 1.32, 0).scale.set(1, 0.75, 1);
+      const sh = new T.Group(); sh.position.set(0.33 * sd, 1.3, 0); sh.rotation.z = 0.12 * sd; rig.add(sh);
+      add(sh, GEO.upperArm, suitMat, 0, 0, 0);
+      const el = new T.Group(); el.position.set(0, -0.3, 0); sh.add(el);
+      add(el, GEO.foreArm, suitMat, 0, 0, 0);
+      add(el, GEO.glove, bodyMat, 0, -0.28, 0);
+      return { sh, el, sd };
+    });
+    // Cabeza: casco, visor envolvente, ojos y auriculares de neón
+    add(rig, GEO.neck, suitMat, 0, 1.41, 0);
+    const head = new T.Group(); head.position.set(0, 1.62, 0); rig.add(head);
+    add(head, GEO.head, bodyMat, 0, 0, 0);
+    add(head, GEO.visor, visorMat, 0, -0.01, 0);
+    const eyes = [-1, 1].map((sd) => { const e = add(head, GEO.eye, MAT_EYE, 0.085 * sd, 0, 0.255); e.scale.set(1, 1.25, 0.5); return e; });
+    [-1, 1].forEach((sd) => { const e = add(head, GEO.ear, trimMat, 0.25 * sd, 0, -0.02); e.rotation.z = Math.PI / 2; });
+
+    // Accesorio de cabeza
+    const hatMat = own(new T.MeshStandardMaterial({ color: color.clone().multiplyScalar(0.35), roughness: 0.6 }));
+    let halo = null;
+    switch (lk.h) {
+      case 1: add(head, GEO.cap, hatMat, 0, 0.19, 0); add(head, GEO.brim, hatMat, 0, 0.14, 0.25); add(head, GEO.stripe, trimMat, 0, 0.2, 0.25).scale.set(0.6, 0.8, 0.3); break;
+      case 2: add(head, GEO.crown, MAT_GOLD, 0, 0.3, 0); add(head, GEO.gem, MAT_HORN, 0, 0.3, 0.23); break;
+      case 3: { const a = add(head, GEO.horn, MAT_HORN, -0.15, 0.27, 0.02); a.rotation.z = 0.45; const b = add(head, GEO.horn, MAT_HORN, 0.15, 0.27, 0.02); b.rotation.z = -0.45; break; }
+      case 4: add(head, GEO.stick, MAT_ANT, 0, 0.4, 0); add(head, GEO.ball, MAT_ANT, 0, 0.6, 0); break;
+      case 5: for (let i = 0; i < 5; i++) { const z = 0.16 - i * 0.085, s = add(head, GEO.spike, trimMat, 0, Math.sqrt(Math.max(0, 0.0625 - z * z)) + 0.06, z); s.rotation.x = -0.35 - i * 0.12; s.scale.setScalar(1.15 - Math.abs(i - 1.5) * 0.12); } break;
+      case 6: halo = add(head, GEO.halo, MAT_HALO, 0, 0.42, 0); halo.rotation.x = Math.PI / 2; break;
+      default: break;
+    }
+
+    // Espalda
+    let cape = null, wings = null, flames = null;
+    const capeMat = own(new T.MeshStandardMaterial({ color: color.clone().multiplyScalar(0.55), emissive: color.clone().multiplyScalar(0.2), side: T.DoubleSide, roughness: 0.7 }));
+    if (lk.k !== 4) { add(rig, GEO.core, suitMat, 0, 1.13, -0.21); add(rig, GEO.coreGlow, trimMat, 0, 1.13, -0.215); }
+    if (lk.k === 0) {
+      cape = new T.Group(); cape.position.set(0, 1.4, -0.3); rig.add(cape);
+      add(cape, GEO.cape, capeMat, 0, 0, 0);
+    } else if (lk.k === 1) {
+      const n = add(rig, GEO.scarfRing, capeMat, 0, 1.4, 0); n.rotation.x = Math.PI / 2;
+      cape = new T.Group(); cape.position.set(0.1, 1.38, -0.17); rig.add(cape);
+      add(cape, GEO.scarf, capeMat, 0, 0, 0);
+    } else if (lk.k === 3) {
+      const wingMat = own(new T.MeshBasicMaterial({ color: color.clone().lerp(new T.Color(0xffffff), 0.2), transparent: true, opacity: 0.6, side: T.DoubleSide, depthWrite: false }));
+      wings = [-1, 1].map((sd) => {
+        const g = new T.Group(); g.position.set(0.07 * sd, 1.26, -0.28); g.scale.x = sd; g.userData.sd = sd; rig.add(g);
+        add(g, GEO.wing, wingMat, 0, 0, 0);
+        return g;
+      });
+    } else if (lk.k === 4) {
+      flames = [-1, 1].map((sd) => {
+        add(rig, GEO.tank, MAT_METAL, 0.11 * sd, 1.14, -0.28);
+        add(rig, GEO.stripe, trimMat, 0.11 * sd, 1.2, -0.28).scale.set(0.55, 1, 1.9);
+        add(rig, GEO.nozzle, suitMat, 0.11 * sd, 0.92, -0.28);
+        const fl = add(rig, GEO.flame, MAT_FLAME, 0.11 * sd, 0.88, -0.28);
+        fl.visible = false;
+        return fl;
+      });
+    }
+
+    // Efectos
+    const aura = new T.Mesh(GEO.aura, MAT_AURA);
+    aura.rotation.x = -Math.PI / 2; aura.position.y = 0.05; aura.visible = false;
+    root.add(aura);
+    const shield = add(model, GEO.shield, MAT_SHIELD, 0, 1.0, 0);
+    shield.rotation.x = Math.PI / 2; shield.visible = false;
+    const shadow = new T.Mesh(GEO.shadow, MAT_SHADOW);
+    shadow.rotation.x = -Math.PI / 2;
+    const label = makeLabel();
+    root.add(label.spr);
+
+    // Estela de velocidad (cinta que sigue al jugador al correr rápido o hacer dash)
+    const tGeo = new T.BufferGeometry();
+    tGeo.setAttribute('position', new T.Float32BufferAttribute(new Float32Array(TRAIL_N * 6), 3));
+    tGeo.setAttribute('color', new T.Float32BufferAttribute(new Float32Array(TRAIL_N * 6), 3));
+    const idx = [];
+    for (let i = 0; i < TRAIL_N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    tGeo.setIndex(idx);
+    const trailMat = own(new T.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide }));
+    const trail = new T.Mesh(tGeo, trailMat);
+    trail.frustumCulled = false; trail.visible = false;
+
+    return { root, model, rig, bodyMat, suitMat, trimMat, visorMat, mats, color, trimColor: trimMat.color.clone(), visorColor: visorMat.emissive.clone(),
+      legs, arms, head, torso, eyes, halo, cape, wings, flames, aura, shield, shadow, label, trail, trailPts: [], trailT: 0,
+      scale: 1, speed: 0, run: 0, air: 0, px: 0, pz: 0, dx: 0, dy: 0, dz: 0, dry: 0, fresh: true, phase: Math.random() * 6, key: '' };
+  }
+  function disposeAvatar(av) {
+    scene.remove(av.root); scene.remove(av.shadow); scene.remove(av.trail);
+    if (av.mixer) av.mixer.stopAllAction();
+    for (const m of av.mats) m.dispose();
+    av.trail.geometry.dispose();
+    av.label.tex.dispose(); av.label.spr.material.dispose();
+  }
+  const avatars = new Map();
+  loadRunner();
+  function ensureAvatar(id, lk) {
+    const key = lk.c + '|' + lk.h + '|' + lk.k;
+    let av = avatars.get(id);
+    if (av && av.key !== key) { disposeAvatar(av); av = null; }
+    if (!av) {
+      av = makeAvatar(lk); av.key = key;
+      avatars.set(id, av); scene.add(av.root); scene.add(av.shadow); scene.add(av.trail);
+    }
+    return av;
+  }
+  const IT_COLOR = new T.Color(IT_HEX);
+  const TMP_COLOR = new T.Color();
+  function updateTrail(av, strength, col, dt) {
+    const pts = av.trailPts;
+    av.trailT -= dt;
+    if (av.trailT <= 0 || pts.length === 0) {
+      av.trailT = 0.03;
+      pts.unshift({ x: av.dx, y: av.dy, z: av.dz });
+      if (pts.length > TRAIL_N) pts.length = TRAIL_N;
+    } else {
+      pts[0].x = av.dx; pts[0].y = av.dy; pts[0].z = av.dz;
+    }
+    av.trail.visible = strength > 0.02 && pts.length > 1;
+    if (!av.trail.visible) return;
+    const pos = av.trail.geometry.attributes.position, cl = av.trail.geometry.attributes.color;
+    const lo = 0.55 * av.scale, hi = 1.3 * av.scale;
+    for (let i = 0; i < TRAIL_N; i++) {
+      const p = pts[Math.min(i, pts.length - 1)];
+      const f = i < pts.length ? Math.pow(1 - i / (TRAIL_N - 1), 1.6) * strength * 0.8 : 0;
+      pos.setXYZ(i * 2, p.x, p.y + lo + (hi - lo) * 0.25 * (i / TRAIL_N), p.z);
+      pos.setXYZ(i * 2 + 1, p.x, p.y + hi - (hi - lo) * 0.25 * (i / TRAIL_N), p.z);
+      cl.setXYZ(i * 2, col.r * f, col.g * f, col.b * f);
+      cl.setXYZ(i * 2 + 1, col.r * f, col.g * f, col.b * f);
+    }
+    pos.needsUpdate = true; cl.needsUpdate = true;
+  }
+  function updateAvatar(av, x, y, z, ry, o, t, dt) {
+    const k = av.fresh ? 1 : 1 - Math.exp(-(o.smooth || 14) * dt);
+    av.dx = lerp(av.dx, x, k); av.dy = lerp(av.dy, y, k); av.dz = lerp(av.dz, z, k);
+    av.dry = av.fresh ? ry : angleLerp(av.dry, ry, k);
+    if (av.fresh) av.trailPts.length = 0;
+    av.fresh = false;
+    const sp = Math.hypot(av.dx - av.px, av.dz - av.pz) / Math.max(dt, 1e-3);
+    av.px = av.dx; av.pz = av.dz;
+    av.speed = lerp(av.speed, Math.min(sp, 25), 0.2);
+    av.root.position.set(av.dx, av.dy, av.dz);
+    av.model.rotation.y = av.dry;
+    av.scale = lerp(av.scale, o.it ? 1.2 : 1, 1 - Math.exp(-8 * dt));
+    av.model.scale.setScalar(av.scale);
+
+    // Colores: rosa pulsante si la lleva; más brillo con cada evolución activa
+    const evo = Math.min(3, o.evo);
+    if (o.it) {
+      av.bodyMat.emissive.copy(IT_COLOR); av.bodyMat.emissiveIntensity = 0.6 + 0.25 * Math.sin(t * 0.008);
+      av.trimMat.color.copy(IT_COLOR); av.visorMat.emissive.copy(IT_COLOR); av.visorMat.emissiveIntensity = av.glb ? 0.45 : 0.9;
+    } else {
+      av.bodyMat.emissive.copy(av.color); av.bodyMat.emissiveIntensity = 0.12 + 0.3 * evo;
+      av.trimMat.color.copy(av.trimColor); av.visorMat.emissive.copy(av.visorColor); av.visorMat.emissiveIntensity = (av.glb ? 0.12 : 0.5) + 0.15 * evo;
+    }
+    av.aura.visible = o.it; av.aura.rotation.z += dt * 2;
+    av.shield.visible = o.shield > 0; av.shield.rotation.z += dt * 3;
+
+    // Animación: correr, saltar, dash y reposo
+    const f = floorAt(av.dx, av.dz, av.dy + 0.05);
+    const inAir = av.dy - f > 0.15;
+    av.air = lerp(av.air, inAir ? 1 : 0, 1 - Math.exp(-12 * dt));
+    const dash = clamp((av.speed - 11) / 6, 0, 1);
+    if (av.glb) animateGlb(av, o, t, dt, inAir, dash);
+    else animateProc(av, o, t, dt, dash);
+
+    // Estela al correr rápido (orbe de velocidad, dash o mutación)
+    const tStrength = Math.max(clamp((av.speed - 7) / 6, 0, 1), o.it && av.speed > 2 ? 0.3 : 0);
+    TMP_COLOR.copy(o.it ? IT_COLOR : av.trimColor);
+    updateTrail(av, tStrength, TMP_COLOR, dt);
+
+    av.shadow.position.set(av.dx, f + 0.03, av.dz);
+    av.shadow.scale.setScalar(clamp(1 - (av.dy - f) * 0.08, 0.4, 1) * av.scale);
+    drawLabel(av.label, o.name, o.it, o.mine);
+  }
+  function animateProc(av, o, t, dt, dash) {
+    const a = clamp(av.speed / CFG.speed, 0, 1.15) * (1 - av.air);
+    av.run += dt * (2 + av.speed * 1.75);
+    const s = Math.sin(av.run), c = Math.cos(av.run);
+    const kk = 1 - Math.exp(-18 * dt);
+    const breathe = Math.sin(t * 0.003 + av.phase);
+    for (let i = 0; i < 2; i++) {
+      const sd = i ? 1 : -1, L = av.legs[i], A = av.arms[i];
+      const swing = s * sd;
+      const hipT = -swing * 0.8 * a + av.air * (i ? -0.7 : 0.25);
+      const kneeT = a * (0.25 + 0.95 * Math.max(0, sd * c)) + av.air * (i ? 0.5 : 1.0);
+      const shT = swing * 0.85 * a + av.air * -2.5 + dash * 1.1 + (1 - a) * (1 - av.air) * breathe * 0.04;
+      const elT = -(0.25 + 0.75 * a) - av.air * 0.2 - dash * 0.3;
+      L.hip.rotation.x = lerp(L.hip.rotation.x, hipT, kk);
+      L.knee.rotation.x = lerp(L.knee.rotation.x, kneeT, kk);
+      A.sh.rotation.x = lerp(A.sh.rotation.x, shT, kk);
+      A.sh.rotation.z = lerp(A.sh.rotation.z, A.sd * (0.12 + av.air * 0.35), kk);
+      A.el.rotation.x = lerp(A.el.rotation.x, elT, kk);
+    }
+    av.rig.rotation.x = lerp(av.rig.rotation.x, a * 0.16 + dash * 0.35 - av.air * 0.05, kk);
+    av.rig.position.y = Math.abs(c) * 0.07 * a + (1 - a) * (1 - av.air) * breathe * 0.008;
+    av.head.rotation.x = -av.rig.rotation.x * 0.5;
+    // Ojos: parpadean y se enojan cuando la llevas
+    const blink = ((t * 0.001 + av.phase) % 4.2) < 0.12;
+    for (let i = 0; i < 2; i++) {
+      const e = av.eyes[i];
+      e.scale.y = blink ? 0.15 : 1.25;
+      e.rotation.z = o.it ? (i ? 0.55 : -0.55) : 0;
+    }
+    if (av.halo) { av.halo.position.y = 0.42 + Math.sin(t * 0.004 + av.phase) * 0.03; av.halo.rotation.z += dt; }
+    if (av.cape) {
+      const target = clamp(av.speed * 0.17, 0, 1.25) + av.air * 0.5 + Math.sin(t * 0.012 * (1 + av.speed * 0.3) + av.phase) * 0.06 * (0.3 + av.speed * 0.15);
+      av.cape.rotation.x = lerp(av.cape.rotation.x, target, 0.15);
+    }
+    if (av.wings) {
+      const flap = 0.55 + Math.sin(t * (0.004 + av.air * 0.014) + av.phase) * (0.12 + av.air * 0.35) - a * 0.2;
+      av.wings.forEach((w) => { w.rotation.y = flap * w.userData.sd; });
+    }
+    if (av.flames) {
+      const on = av.air > 0.2 || dash > 0.1;
+      av.flames.forEach((fl, i) => {
+        fl.visible = on;
+        if (on) fl.scale.set(1, 0.6 + Math.random() * 0.6 + av.air * 0.5, 1);
+      });
+    }
+  }
+
+  // ---------------- Orbes ----------------
+  const orbMeshes = new Map();
+  const orbMats = PU.map((p) => new T.MeshStandardMaterial({ color: p.hex, emissive: p.hex, emissiveIntensity: 1.3, roughness: 0.3 }));
+  const beamGeo = new T.CylinderGeometry(0.07, 0.07, 3.2, 8, 1, true);
+  const beamMats = PU.map((p) => new T.MeshBasicMaterial({ color: p.hex, transparent: true, opacity: 0.3, blending: T.AdditiveBlending, depthWrite: false }));
+  function syncOrbs(list, t) {
+    const seen = new Set();
+    for (const o of list) {
+      const id = o[0], k = clamp(o[1] | 0, 0, PU.length - 1);
+      seen.add(id);
+      let m = orbMeshes.get(id);
+      if (!m) {
+        m = new T.Group();
+        m.add(new T.Mesh(GEO.orb, orbMats[k]));
+        const ring = new T.Mesh(GEO.orbRing, orbMats[k]); ring.rotation.x = Math.PI / 2; m.add(ring);
+        const beam = new T.Mesh(beamGeo, beamMats[k]); beam.position.y = 1.4; m.add(beam);
+        m.scale.setScalar(1.15);
+        m.position.set(num(o[2]), num(o[3]), num(o[4]));
+        scene.add(m); orbMeshes.set(id, m);
+      }
+      m.children[0].rotation.y = t * 0.002;
+      m.children[1].rotation.z = t * 0.0015;
+      m.position.y = num(o[3]) + 0.95 + Math.sin(t * 0.004 + id) * 0.15;
+    }
+    for (const [id, m] of orbMeshes) if (!seen.has(id)) { scene.remove(m); orbMeshes.delete(id); }
+  }
+
+  // ================================================================
+  // Sonido sintetizado (Web Audio)
+  // ================================================================
+  const SND = {
+    ctx: null, out: null, humGain: null, muted: false, nextBeat: 0,
+    init() {
+      if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {}); return; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      try { this.ctx = new AC(); } catch (e) { return; }
+      const c = this.ctx;
+      this.out = c.createGain(); this.out.gain.value = this.muted ? 0 : 0.9; this.out.connect(c.destination);
+      const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 70;
+      const lfo = c.createOscillator(); lfo.frequency.value = 3;
+      const lg = c.createGain(); lg.gain.value = 18; lfo.connect(lg); lg.connect(o.frequency);
+      const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 300;
+      const g = c.createGain(); g.gain.value = 0;
+      o.connect(f); f.connect(g); g.connect(this.out); o.start(); lfo.start();
+      this.humGain = g;
+    },
+    tone(f0, f1, dur, type, vol, delay) {
+      const c = this.ctx; if (!c || this.muted) return;
+      const t0 = c.currentTime + (delay || 0);
+      const o = c.createOscillator(); o.type = type || 'sine';
+      o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(this.out); o.start(t0); o.stop(t0 + dur + 0.05);
+    },
+    pickup(v) { this.tone(600, 1500, 0.22, 'sine', 0.22 * v); this.tone(900, 2000, 0.18, 'triangle', 0.1 * v, 0.05); },
+    tag() { this.tone(240, 50, 0.4, 'sawtooth', 0.22); this.tone(120, 40, 0.5, 'square', 0.1); },
+    block() { this.tone(900, 1400, 0.25, 'triangle', 0.18); this.tone(1350, 1800, 0.25, 'sine', 0.12, 0.04); },
+    end() { [660, 550, 440].forEach((f, i) => this.tone(f, f * 0.98, 0.28, 'square', 0.1, i * 0.22)); },
+    beep(f) { this.tone(f, f, 0.12, 'square', 0.08); },
+    whoosh() { this.tone(180, 900, 0.6, 'sawtooth', 0.07); },
+    jump() { this.tone(300, 620, 0.12, 'triangle', 0.06); },
+    thump(v) { this.tone(72, 40, 0.18, 'sine', 0.45 * v); this.tone(62, 38, 0.16, 'sine', 0.3 * v, 0.24); },
+    setHum(level) { if (this.humGain) this.humGain.gain.setTargetAtTime(this.muted ? 0 : level, this.ctx.currentTime, 0.12); },
+    setMuted(m) { this.muted = m; if (this.out) this.out.gain.value = m ? 0 : 0.9; if (m) this.setHum(0); },
+  };
+
+  // ================================================================
+  // Estado local
+  // ================================================================
+  const saved = load('tagverse.look') || {};
+  const look = {
+    name: typeof saved.name === 'string' && saved.name.trim() ? saved.name.trim().slice(0, 12) : 'Jugador' + Math.floor(10 + Math.random() * 90),
+    c: clamp(saved.c | 0, 0, COLORS.length - 1), h: clamp(saved.h | 0, 0, HATS.length - 1), k: clamp(saved.k | 0, 0, CAPES.length - 1),
+  };
+  const opts = { bots: clamp(num((load('tagverse.opts') || {}).bots, 2), 0, 3), len: clamp(num((load('tagverse.opts') || {}).len, 180000), 120000, 300000) };
+  const me = { body: newBody(LOBBY_C.x, 0.6, LOBBY_C.z) };
+  let viewMode = load('tagverse.view') === 'fp' ? 'fp' : 'tp', menuTab = 'play';
+  let mode = 'menu';
+  let session = null;                     // { multi, sala, bots, roundMs }
+  let room = null, myPeer = null;
+  let iAmHost = false, hadG = false, hostPeerId = null, joinGraceUntil = 0;
+  let S = null;                           // estado autoritativo (solo el anfitrión)
+  let G = null, Gat = 0;                  // vista del estado que se está jugando
+  let lastG = null, lastGAt = 0, lastGObj = null;
+  let lastEv = 0, evPrimed = false, lastTp = 0, tpPrimed = false;
+  let camYaw = 0, camPitch = viewMode === 'fp' ? 0.12 : 0.62, menuYaw = 0.6;
+  const camTarget = new T.Vector3(0, 4, 0);
+  const keys = new Set();
+  let jumpQueued = false, dashQueued = false;
+  const joyVec = { x: 0, y: 0 };
+
+  const myId = () => (session && session.multi ? myPeer : 'me');
+
+  // ================================================================
+  // Anfitrión: simulación autoritativa
+  // ================================================================
+  function newBot(i) {
+    const sp = LOBBY_SPAWNS[(i + 2) % LOBBY_SPAWNS.length];
+    return { id: 'bot' + i, ni: i, c: (i * 3 + 2) % COLORS.length, h: (i + 1) % HATS.length, k: i % CAPES.length,
+      body: newBody(sp.x, 0, sp.z), wx: 0, wz: 0, stuck: 0, wander: Math.random() * 6.28, phase: Math.random() * 6, nextDash: 0 };
+  }
+  function newHostState(botCount, roundMs, t) {
+    const s = { ph: 'w', phEnd: t, it: '', r: 0, los: '', roundMs, hn: look.name, orbs: [], orbSeq: 0, fx: [], sh: new Map(),
+      tp: [], tpSeq: 0, mu: 0, mutUntil: [0, 0, 0, 0], mutCd: [0, 0, 0, 0], lost: new Map(), ev: [], evSeq: 0,
+      immune: '', immuneEnd: 0, nextTag: 0, nextOrb: 0, nextDir: 0, lastTagTime: t, bots: [] };
+    for (let i = 0; i < botCount; i++) s.bots.push(newBot(i));
+    return s;
+  }
+  function toWire(s, t) {
+    const w = {
+      ph: s.ph, rem: Math.max(0, Math.round(s.phEnd - t)), it: s.it, r: s.r, los: s.los, hn: s.hn.slice(0, 12), rm: s.roundMs,
+      o: s.orbs.map((o) => [o.id, o.k, r2(o.x), r2(o.y), r2(o.z)]),
+      f: s.fx.map((f) => [f.id, f.k, Math.max(0, Math.round(f.end - t))]),
+      sh: [...s.sh].filter((e) => e[1] > 0),
+      tp: s.tp.map((x) => [x.seq, x.id, r2(x.x), r2(x.y), r2(x.z)]),
+      mu: s.mu, l: [...s.lost].slice(-12), im: t < s.immuneEnd ? s.immune : '',
+      b: s.bots.map((b) => [b.id, r2(b.body.x), r2(b.body.y), r2(b.body.z), r2(b.body.ry), b.c, b.h, b.k, b.ni]),
+      ev: s.ev.slice(-6),
+    };
+    return w;
+  }
+  function fromWire(g, ageMs, t) {
+    const s = newHostState(0, num(g.rm, 180000), t);
+    s.ph = ['w', 'c', 'p', 'o', 'e'].includes(g.ph) ? g.ph : 'w';
+    s.phEnd = t + num(g.rem) - ageMs;
+    s.it = typeof g.it === 'string' ? g.it : ''; s.r = num(g.r); s.los = typeof g.los === 'string' ? g.los : '';
+    s.orbs = (g.o || []).map((o) => ({ id: num(o[0]), k: clamp(num(o[1]) | 0, 0, PU.length - 1), x: num(o[2]), y: num(o[3]), z: num(o[4]) }));
+    s.orbSeq = s.orbs.reduce((m, o) => Math.max(m, o.id), 0) + 100;
+    s.fx = (g.f || []).map((f) => ({ id: String(f[0]), k: clamp(num(f[1]) | 0, 0, PU.length - 1), end: t + num(f[2]) - ageMs }));
+    s.sh = new Map((g.sh || []).map((e) => [String(e[0]), num(e[1])]));
+    s.mu = num(g.mu) & 15;
+    for (let i = 0; i < 4; i++) if (s.mu & (1 << i)) { s.mutUntil[i] = t + 10000; s.mutCd[i] = t + 30000; }
+    s.lost = new Map((g.l || []).map((e) => [String(e[0]), num(e[1])]));
+    s.ev = (g.ev || []).slice(-6);
+    s.evSeq = s.ev.reduce((m, e) => Math.max(m, num(e[0])), 0);
+    s.tpSeq = (g.tp || []).reduce((m, x) => Math.max(m, num(x[0])), lastTp);
+    s.bots = (g.b || []).slice(0, 3).map((a) => { const b = newBot(num(a[8]) | 0); b.id = String(a[0]); b.c = num(a[5]) | 0; b.h = num(a[6]) | 0; b.k = num(a[7]) | 0; Object.assign(b.body, { x: num(a[1]), y: num(a[2]), z: num(a[3]), ry: num(a[4]) }); return b; });
+    s.immune = typeof g.im === 'string' ? g.im : ''; s.immuneEnd = s.immune ? t + 1500 : 0;
+    s.nextTag = t; s.nextOrb = t + 3000; s.nextDir = t + 5000; s.lastTagTime = t;
+    return s;
+  }
+  function hostEvent(type, a, b) {
+    S.evSeq++;
+    S.ev.push([S.evSeq, type, a || '', b === undefined ? '' : b]);
+    if (S.ev.length > 6) S.ev.shift();
+  }
+  function setPhase(ph, ms, t) { S.ph = ph; S.phEnd = t + ms; }
+  function hostEntities() {
+    const ents = [{ id: myId(), x: me.body.x, y: me.body.y, z: me.body.z, bot: null }];
+    if (session.multi) {
+      for (const p of salaPeers()) {
+        if (p.isMe && p.sameTab) continue;
+        const a = p.presence.p;
+        if (!Array.isArray(a)) continue;
+        ents.push({ id: p.peer, x: clamp(num(a[0]), -LIMIT, LIMIT), y: clamp(num(a[1]), 0, 30), z: clamp(num(a[2]), -LIMIT, LIMIT), bot: null, pk: p.presence.pk });
+      }
+    }
+    for (const b of S.bots) ents.push({ id: b.id, x: b.body.x, y: b.body.y, z: b.body.z, bot: b });
+    return ents;
+  }
+  function teleportEntity(e, p, t) {
+    if (e.bot) { Object.assign(e.bot.body, { x: p.x, y: p.y, z: p.z, vx: 0, vz: 0, vy: 0 }); return; }
+    S.tpSeq++;
+    S.tp.push({ seq: S.tpSeq, id: e.id, x: p.x, y: p.y, z: p.z, t });
+  }
+  function clearRoundStuff() {
+    S.fx = []; S.sh.clear(); S.orbs = []; S.mu = 0; S.mutUntil = [0, 0, 0, 0];
+  }
+
+  function hostTick(t, dt) {
+    const ents = hostEntities();
+    const n = ents.length;
+    S.tp = S.tp.filter((x) => t - x.t < 4000);
+
+    if (S.ph === 'w') {
+      // Sala de espera: se pasea libremente; el anfitrión pulsa "Empezar".
+      for (const e of ents) if (!inLobby(e.x, e.z) && lateOk(e.id, t)) teleportEntity(e, pick(LOBBY_SPAWNS), t);
+    } else if (S.ph === 'c') {
+      if (n < 2) toLobby(t, ents);
+      else if (t >= S.phEnd) {
+        S.r++; S.it = pick(ents).id; S.immune = ''; S.immuneEnd = 0;
+        S.nextTag = t + 800; S.lastTagTime = t; S.nextOrb = t + 1500; S.nextDir = t + 6000;
+        const off = Math.floor(Math.random() * SPAWNS.length);
+        ents.forEach((e, i) => teleportEntity(e, SPAWNS[(off + i * 4) % SPAWNS.length], t));
+        setPhase('p', S.roundMs, t);
+        hostEvent(6, S.it);
+      }
+    } else if (S.ph === 'p') {
+      if (n < 2) toLobby(t, ents);
+      else {
+        // Quien llega a mitad de ronda sale de la sala de espera directo a la estación
+        for (const e of ents) if (inLobby(e.x, e.z) && lateOk(e.id, t)) teleportEntity(e, pick(SPAWNS), t);
+        if (!ents.some((e) => e.id === S.it)) { S.it = pick(ents).id; S.immune = ''; hostEvent(1, S.it, ''); }
+        if (t >= S.phEnd) {
+          const loser = S.it;
+          S.lost.set(loser, (S.lost.get(loser) || 0) + 1);
+          S.los = loser; S.it = '';
+          clearRoundStuff();
+          setPhase('o', CFG.overTime, t);
+          hostEvent(5, loser);
+        } else {
+          hostGameplay(ents, t);
+        }
+      }
+    } else if (S.ph === 'o') {
+      if (t >= S.phEnd) { if (n >= 2) setPhase('c', CFG.countdown, t); else toLobby(t, ents); }
+    }
+
+    // Bots (se mueven siempre; solo persiguen/huyen en juego)
+    for (const b of S.bots) botStep(b, ents, t, dt);
+  }
+  const lateTp = new Map();
+  function lateOk(id, t) {
+    if (t - (lateTp.get(id) || -1e9) < 3000) return false;
+    lateTp.set(id, t);
+    return true;
+  }
+  function toLobby(t, ents) {
+    clearRoundStuff();
+    S.it = ''; S.immune = ''; S.immuneEnd = 0;
+    setPhase('w', 0, t);
+    (ents || hostEntities()).forEach((e, i) => { lateTp.set(e.id, t); teleportEntity(e, LOBBY_SPAWNS[i % LOBBY_SPAWNS.length], t); });
+  }
+
+  // Decisiones del anfitrión: empezar desde la sala de espera, ajustes y fin de ronda.
+  function hostAction(kind, arg) {
+    if (!iAmHost || !S) return;
+    const t = nowMs(), ents = hostEntities(), n = ents.length;
+    if (kind === 'start') { if (S.ph === 'w' && n >= 2) { setPhase('c', CFG.countdown, t); SND.beep(660); } return; }
+    if (kind === 'bots') {
+      if (S.ph !== 'w') return;
+      const k = clamp(arg | 0, 0, 3);
+      while (S.bots.length > k) S.bots.pop();
+      while (S.bots.length < k) S.bots.push(newBot(S.bots.length));
+      session.bots = k;
+      return;
+    }
+    if (kind === 'len') { if (S.ph !== 'w') return; S.roundMs = arg; session.roundMs = arg; return; }
+    if (S.ph !== 'o') return;
+    if (kind === 'end') {
+      S.ph = 'e'; S.phEnd = t + (session.multi ? 1800 : 0);
+      hostEvent(8, '');
+      return;
+    }
+    if (kind === 'reset') { S.lost.clear(); S.r = 0; S.los = ''; hostEvent(7, ''); toLobby(t, ents); return; }
+    if (n >= 2) setPhase('c', CFG.countdown, t); else toLobby(t, ents);
+  }
+
+  function hostGameplay(ents, t) {
+    S.fx = S.fx.filter((f) => f.end > t);
+    const itE = ents.find((e) => e.id === S.it);
+
+    // Toques
+    if (itE && t >= S.nextTag) {
+      for (const e of ents) {
+        if (e.id === S.it) continue;
+        if (e.id === S.immune && t < S.immuneEnd) continue;
+        if (Math.hypot(e.x - itE.x, e.z - itE.z) < CFG.tagDist && Math.abs(e.y - itE.y) < 1.6) {
+          S.nextTag = t + CFG.tagCooldown;
+          const sh = S.sh.get(e.id) || 0;
+          if (sh > 0) {
+            S.sh.set(e.id, sh - 1);
+            hostEvent(2, e.id, S.it);
+          } else {
+            const prev = S.it;
+            S.it = e.id; S.immune = prev; S.immuneEnd = t + CFG.immunity; S.lastTagTime = t;
+            S.fx = S.fx.filter((f) => !(f.id === e.id && PU[f.k].aud === 'run'));
+            hostEvent(1, e.id, prev);
+          }
+          break;
+        }
+      }
+    }
+
+    // Recolección de orbes
+    for (let i = S.orbs.length - 1; i >= 0; i--) {
+      const o = S.orbs[i];
+      for (const e of ents) {
+        // Cualquiera puede coger cualquier orbe. Radio generoso y, en multijugador, también vale el aviso del cliente.
+        const dh = Math.hypot(e.x - o.x, e.z - o.z);
+        const near = dh <= 1.6 && e.y >= o.y - 1.0 && e.y <= o.y + 2.4;
+        const claimed = Array.isArray(e.pk) && num(e.pk[0]) === o.id && dh < 4.5;
+        if (!near && !claimed) continue;
+        grantPowerUp(e, o.k, t);
+        S.orbs.splice(i, 1);
+        hostEvent(3, e.id, o.k);
+        break;
+      }
+    }
+
+    // Aparición de orbes
+    if (t >= S.nextOrb) {
+      S.nextOrb = t + CFG.orbEvery;
+      if (S.orbs.length < CFG.maxOrbs) {
+        const free = ORB_POINTS.filter((p) => !S.orbs.some((o) => Math.hypot(o.x - p.x, o.z - p.z) < 2 && Math.abs(o.y - p.y) < 1)
+          && Math.abs(floorAt(p.x, p.z, p.y + 0.1) - p.y) < 0.05);
+        if (free.length) {
+          const p = pick(free);
+          let roll = Math.random() * PU_WEIGHT.reduce((a, b) => a + b, 0), k = 0;
+          for (; k < PU.length - 1; k++) { roll -= PU_WEIGHT[k]; if (roll <= 0) break; }
+          S.orbSeq++;
+          S.orbs.push({ id: S.orbSeq, k, x: p.x, y: p.y, z: p.z });
+        }
+      }
+    }
+
+    // Director de juego (IA): si la partida se estanca, altera el mapa.
+    for (let i = 0; i < 4; i++) if (S.mutUntil[i] && t >= S.mutUntil[i]) { S.mu &= ~(1 << i); S.mutUntil[i] = 0; }
+    if (itE && t >= S.nextDir) {
+      S.nextDir = t + 5000;
+      const runners = ents.filter((e) => e.id !== S.it);
+      const avg = runners.reduce((a, e) => a + Math.hypot(e.x - itE.x, e.z - itE.z), 0) / Math.max(1, runners.length);
+      const quiet = clamp((t - S.lastTagTime) / 28000, 0, 1);
+      const stagnation = 0.6 * quiet + 0.4 * clamp(avg / 30, 0, 1);
+      if (stagnation >= 0.6) {
+        const cand = [0, 1, 2, 3].filter((i) => !(S.mu & (1 << i)) && t >= S.mutCd[i]);
+        if (cand.length) {
+          const i = pick(cand);
+          S.mu |= 1 << i; S.mutUntil[i] = t + MUTS[i].dur; S.mutCd[i] = t + MUTS[i].cd;
+          S.lastTagTime = t;
+          hostEvent(4, String(i));
+        }
+      }
+    }
+  }
+
+  function grantPowerUp(e, k, t) {
+    const p = PU[k];
+    if (k === 3) { S.sh.set(e.id, 1); return; }
+    if (k === 4) {
+      const far = SPAWNS.concat(ORB_POINTS).filter((q) => Math.hypot(q.x - e.x, q.z - e.z) > 16 && Math.abs(floorAt(q.x, q.z, q.y + 0.1) - q.y) < 0.05);
+      teleportEntity(e, pick(far.length ? far : SPAWNS), t);
+      return;
+    }
+    S.fx = S.fx.filter((f) => !(f.id === e.id && f.k === k));
+    S.fx.push({ id: e.id, k, end: t + p.dur });
+    if (S.fx.length > 16) S.fx.shift();
+  }
+
+  function roomCenter(i) { const r = AREAS[i]; return { x: (r.x0 + r.x1) / 2, z: (r.z0 + r.z1) / 2 }; }
+  // Esquivar objetos dentro de una sala: si algo se interpone, ir hacia la esquina libre más conveniente
+  const OBST = BOXES.filter((b) => b.mat !== 'wall' && b.cond !== 'door' && b.y1 - b.y0 > 0.55);
+  function segHits(ax, az, bx, bz, b, m) {
+    let t0 = 0, t1 = 1;
+    const dx = bx - ax, dz = bz - az;
+    for (const [p, d, lo, hi] of [[ax, dx, b.x0 - m, b.x1 + m], [az, dz, b.z0 - m, b.z1 + m]]) {
+      if (Math.abs(d) < 1e-9) { if (p < lo || p > hi) return false; continue; }
+      let u = (lo - p) / d, v = (hi - p) / d;
+      if (u > v) { const w = u; u = v; v = w; }
+      t0 = Math.max(t0, u); t1 = Math.min(t1, v);
+      if (t0 > t1) return false;
+    }
+    return true;
+  }
+  function freeSpot(x, z) {
+    if (areaAt(x, z) < 0) return false;
+    for (const b of OBST) if (x > b.x0 - 0.45 && x < b.x1 + 0.45 && z > b.z0 - 0.45 && z < b.z1 + 0.45) return false;
+    return true;
+  }
+  function steer(sx, sz, tx, tz, y) {
+    let hit = null, hd = 1e9;
+    for (const b of OBST) {
+      if (b.y1 <= y + 0.55 || b.y0 > y + 1.6) continue;
+      if (tx > b.x0 - 0.3 && tx < b.x1 + 0.3 && tz > b.z0 - 0.3 && tz < b.z1 + 0.3) continue;   // el destino está encima: ir directo y saltar
+      if (!segHits(sx, sz, tx, tz, b, 0.5)) continue;
+      const d = Math.hypot(clamp(sx, b.x0, b.x1) - sx, clamp(sz, b.z0, b.z1) - sz);
+      if (d < hd) { hd = d; hit = b; }
+    }
+    if (!hit) return { x: tx, z: tz };
+    const m = 1.0, b = hit;
+    let best = null, bs = 1e9;
+    for (const [cx, cz] of [[b.x0 - m, b.z0 - m], [b.x1 + m, b.z0 - m], [b.x1 + m, b.z1 + m], [b.x0 - m, b.z1 + m]]) {
+      if (Math.hypot(cx - sx, cz - sz) < 0.7 || !freeSpot(cx, cz) || segHits(sx, sz, cx, cz, b, 0.3)) continue;
+      const v = Math.hypot(cx - sx, cz - sz) + Math.hypot(tx - cx, tz - cz);
+      if (v < bs) { bs = v; best = { x: cx, z: cz }; }
+    }
+    return best || { x: tx, z: tz };
+  }
+  function botStep(b, ents, t, dt) {
+    const s = b.body;
+    let tx = null, tz = null;
+    const playing = S.ph === 'p';
+    const itE = ents.find((e) => e.id === S.it);
+    const mods = modsFor(b.id, t);
+    mods.speed *= 0.9;                                 // un poco más lentos que una persona
+    if (!playing) {
+      // Sala de espera o entre rondas: pasean tranquilos
+      if (!b.wd || t > b.wdAt || Math.hypot(b.wd.x - s.x, b.wd.z - s.z) < 1) {
+        b.wdAt = t + 2500 + Math.random() * 4000;
+        if (inLobby(s.x, s.z)) b.wd = { x: LOBBY_C.x + (Math.random() - 0.5) * 14, z: LOBBY_C.z + (Math.random() - 0.5) * 9 };
+        else { const c = pick(SPAWNS); b.wd = { x: c.x, z: c.z }; }
+      }
+      tx = b.wd.x; tz = b.wd.z;
+      mods.speed *= 0.5;
+    } else if (b.id === S.it) {
+      let best = null, bd = 1e9;
+      for (const e of ents) {
+        if (e.id === b.id || (e.id === S.immune && t < S.immuneEnd)) continue;
+        const d = Math.hypot(e.x - s.x, e.z - s.z) + Math.abs(e.y - s.y) * 3;
+        if (d < bd) { bd = d; best = e; }
+      }
+      if (best) {
+        tx = best.x; tz = best.z;
+        if (best.y - s.y > 0.8 && s.grounded && bd < 5 && Math.random() < 0.06) tryJump(s, mods, t);
+        if (bd < 7 && areaAt(s.x, s.z) === areaAt(best.x, best.z) && mods.dash > 0 && t > b.nextDash) { tryDash(s, mods); b.nextDash = t + 1500; }
+      }
+    } else if (itE && (b.fleeing = b.fleeing ? Math.hypot(itE.x - s.x, itE.z - s.z) < 22 : Math.hypot(itE.x - s.x, itE.z - s.z) < 15)) {
+      // Huir hacia la sala más alejada de quien la lleva (sin pasar por su lado); cambia de idea con calma
+      const score = (c) => Math.hypot(c.x - itE.x, c.z - itE.z) - 0.7 * Math.hypot(c.x - s.x, c.z - s.z);
+      if (!b.fl || t > b.flAt) {
+        b.flAt = t + 3500;
+        let best = null, sc = -1e9;
+        for (const c of SPAWNS) { const v = score(c); if (v > sc) { sc = v; best = c; } }
+        if (!b.fl || sc > score(b.fl) + 5 || Math.hypot(b.fl.x - s.x, b.fl.z - s.z) < 3) b.fl = best;
+      }
+      tx = b.fl.x; tz = b.fl.z;
+      if (Math.hypot(itE.x - s.x, itE.z - s.z) < 4 && mods.dash > 0 && t > b.nextDash) { tryDash(s, mods); b.nextDash = t + 1500; }
+    } else {
+      let best = null, bd = 1e9;
+      if (!b.skip) b.skip = new Map();
+      for (const o of S.orbs) {
+        if ((b.skip.get(o.id) || 0) > t) continue;
+        const d = Math.hypot(o.x - s.x, o.z - s.z) + Math.abs(o.y - s.y) * 4;
+        if (d < bd) { bd = d; best = o; }
+      }
+      if (best && bd < 34) {
+        if (b.orbId !== best.id) { b.orbId = best.id; b.orbUntil = t + 9000; }
+        else if (t > b.orbUntil) { b.skip.set(best.id, t + 20000); b.orbId = null; }   // si no llega, lo deja para otro
+        tx = best.x; tz = best.z;
+        if (best.y - s.y > 0.4 && s.grounded && Math.hypot(best.x - s.x, best.z - s.z) < 3 && Math.random() < 0.08) tryJump(s, mods, t);
+      } else {
+        if (!b.wd || t > b.wdAt || Math.hypot(b.wd.x - s.x, b.wd.z - s.z) < 1.5) {
+          b.wdAt = t + 6000; const c = pick(SPAWNS); b.wd = { x: c.x, z: c.z };
+        }
+        tx = b.wd.x; tz = b.wd.z;
+      }
+    }
+    let wx = 0, wz = 0;
+    if (tx !== null) {
+      const np0 = navPoint(s.x, s.z, tx, tz);
+      const np = steer(s.x, s.z, np0.x, np0.z, s.y);
+      wx = np.x - s.x; wz = np.z - s.z;
+      if (Math.hypot(wx, wz) < 0.3) { wx = 0; wz = 0; }
+    }
+    const wl = Math.hypot(wx, wz);
+    if (wl > 1e-3) { wx /= wl; wz /= wl; }
+    b.wx = lerp(b.wx, wx, 0.15); b.wz = lerp(b.wz, wz, 0.15);
+    const hs = Math.hypot(s.vx, s.vz);
+    if (wl > 0.1 && s.grounded && hs < 1.2) {
+      b.stuck += dt;
+      if (b.stuck > 0.3) { tryJump(s, mods, t); b.stuck = 0; b.wx += (Math.random() - 0.5) * 1.5; b.wz += (Math.random() - 0.5) * 1.5; }
+    } else b.stuck = 0;
+    if (!s.grounded && s.vy < -1 && s.jumps < 1 + mods.jumps && Math.random() < 0.02) tryJump(s, mods, t);
+    stepBody(s, b.wx, b.wz, dt, mods, t);
+    ventCheck(s, t, false);
+  }
+
+  // Conductos de ventilación (mutación del Director): entras por uno y sales por su pareja
+  function ventCheck(s, t, mine) {
+    if (!(world.mask & 2) || s.y > 0.4) return false;
+    if (s.ventCd && t < s.ventCd) return false;
+    for (const v of VENTS) {
+      if (Math.hypot(s.x - v.x, s.z - v.z) > 0.8) continue;
+      const d = VENTS[v.to], ai = areaAt(d.x, d.z);
+      const c = ai >= 0 ? { x: (AREAS[ai].x0 + AREAS[ai].x1) / 2, z: (AREAS[ai].z0 + AREAS[ai].z1) / 2 } : { x: d.x, z: d.z };
+      const dx = c.x - d.x, dz = c.z - d.z, dl = Math.hypot(dx, dz) || 1;
+      Object.assign(s, { x: d.x + dx / dl * 1.4, y: 0, z: d.z + dz / dl * 1.4, vx: 0, vz: 0, vy: 0 });
+      s.ventCd = t + 2500;
+      if (mine) { SND.whoosh(); toast('Saliste por un conducto de ventilación'); }
+      return true;
+    }
+    return false;
+  }
+
+  // ================================================================
+  // Vista del estado (anfitrión y clientes por igual)
+  // ================================================================
+  function remaining(t) { return G ? Math.max(0, num(G.rem) - (t - Gat)) : 0; }
+  function fxFor(id, t) {
+    if (!G || !Array.isArray(G.f)) return [];
+    const age = t - Gat, out = [];
+    for (const f of G.f) if (f[0] === id) { const left = num(f[2]) - age; if (left > 0) out.push({ k: clamp(f[1] | 0, 0, PU.length - 1), left }); }
+    return out;
+  }
+  function shieldOf(id) { if (!G || !Array.isArray(G.sh)) return 0; const e = G.sh.find((x) => x[0] === id); return e ? num(e[1]) : 0; }
+  function modsFor(id, t) {
+    const m = baseMods();
+    if (G && G.it === id && G.ph === 'p') { m.speed *= CFG.itSpeed; m.agility *= CFG.itAgility; }
+    for (const f of fxFor(id, t)) {
+      const mo = PU[f.k].mods;
+      if (mo.speed) m.speed *= mo.speed;
+      if (mo.agility) m.agility *= mo.agility;
+      if (mo.jumps) m.jumps += mo.jumps;
+      if (mo.dash) m.dash += mo.dash;
+    }
+    return m;
+  }
+  function applyG(g, at) {
+    G = g; Gat = at;
+    const mask = num(g.mu) & 15;
+    if (mask !== world.mask) { rebuildWorld(mask); applyMutationVisuals(mask); }
+    const evs = Array.isArray(g.ev) ? g.ev : [];
+    if (!evPrimed) { lastEv = evs.reduce((m, e) => Math.max(m, num(e[0])), 0); evPrimed = true; }
+    else for (const e of evs) if (num(e[0]) > lastEv) { lastEv = num(e[0]); onEvent(e); }
+    const tps = Array.isArray(g.tp) ? g.tp : [];
+    if (!tpPrimed) { lastTp = tps.reduce((m, x) => Math.max(m, num(x[0])), lastTp); tpPrimed = true; }
+    else for (const x of tps) if (num(x[0]) > lastTp) {
+      lastTp = num(x[0]);
+      if (x[1] === myId()) Object.assign(me.body, { x: num(x[2]), y: num(x[3]), z: num(x[4]), vx: 0, vz: 0, vy: 0 });
+    }
+  }
+
+  function nameOf(id) {
+    if (!id) return 'Nadie';
+    if (id === myId()) return look.name;
+    if (/^bot\d$/.test(id)) {
+      const b = G && Array.isArray(G.b) ? G.b.find((a) => a[0] === id) : null;
+      return 'Bot ' + BOT_NAMES[clamp(b ? num(b[8]) | 0 : 0, 0, BOT_NAMES.length - 1)];
+    }
+    if (room) { const p = room.peers().find((q) => q.peer === id); if (p && typeof p.presence.n === 'string' && p.presence.n.trim()) return p.presence.n.trim().slice(0, 12); }
+    return 'Jugador';
+  }
+
+  function onEvent(e) {
+    const [, type, a, b] = e;
+    const mine = a === myId();
+    switch (type) {
+      case 1: toast(mine ? '¡Te tocaron! Ahora la llevas tú' : `${nameOf(a)} la lleva`, true); SND.tag(); break;
+      case 2: toast(`${nameOf(a)} se salvó con su escudo`); SND.block(); break;
+      case 3: if (mine) { toast(`Evolución: ${PU[clamp(num(b) | 0, 0, PU.length - 1)].name}`); SND.pickup(1); } else SND.pickup(0.25); break;
+      case 4: toast(`El Director ${MUTS[clamp(num(a) | 0, 0, 3)].text}`, true); SND.whoosh(); break;
+      case 5: SND.end(); break;
+      case 7: toast('Sala reiniciada: marcador en cero', true); break;
+      case 6: toast(`Ronda ${num(G && G.r)}: ${mine ? 'empiezas llevándola tú' : nameOf(a) + ' la lleva'}`, true); SND.beep(880); break;
+      default: break;
+    }
+  }
+
+  // ================================================================
+  // Red: sala sobre la "presencia" del lobby (cualquier visitante puede publicarla)
+  // ================================================================
+  function salaPeers() {
+    if (!room || !session || !session.multi) return [];
+    return room.peers().filter((p) => p.kind === 'viewer' && p.presence && p.presence.v === 1 && p.presence.s === session.sala);
+  }
+  function electHost(t) {
+    if (!myPeer) return;
+    const list = salaPeers();
+    if (!list.some((p) => p.peer === myPeer)) return;
+    const hosts = list.filter((p) => (p.peer === myPeer && p.sameTab ? iAmHost : !!p.presence.g));
+    let chosen = null;
+    if (hosts.length) chosen = hosts.reduce((a, b) => (a.peer < b.peer ? a : b));
+    else if (t >= joinGraceUntil) chosen = list.reduce((a, b) => (a.peer < b.peer ? a : b));
+    if (!chosen) return;
+    hostPeerId = chosen.peer;
+    const should = chosen.peer === myPeer;
+    if (should && !iAmHost) {
+      iAmHost = true;
+      S = lastG ? fromWire(lastG, t - lastGAt, t) : newHostState(session.bots, session.roundMs, t);
+    } else if (!should && iAmHost) {
+      iAmHost = false; S = null;
+    }
+  }
+  let lastLookPub = '';
+  function publish() {
+    if (!room) return;
+    const patch = { p: [r2(me.body.x), r2(me.body.y), r2(me.body.z), r2(me.body.ry)] };
+    const lk = look.name + '|' + look.c + '|' + look.h + '|' + look.k + '|' + (ready ? 1 : 0);
+    if (lk !== lastLookPub) { lastLookPub = lk; Object.assign(patch, { n: look.name, c: look.c, h: look.h, k: look.k, rd: ready ? 1 : 0 }); }
+    if (iAmHost && G) {
+      let g = G;
+      if (JSON.stringify(g).length > 3000) g = Object.assign({}, g, { ev: g.ev.slice(-3), f: g.f.slice(-8), tp: g.tp.slice(-3) });
+      patch.g = g; hadG = true;
+    } else if (hadG) { patch.g = null; hadG = false; }
+    room.presence(patch).catch(() => {});
+  }
+  function myPresenceBase() {
+    return { v: 1, s: session.sala, n: look.name, c: look.c, h: look.h, k: look.k, p: [r2(me.body.x), r2(me.body.y), r2(me.body.z), 0] };
+  }
+
+  async function connectRoom() {
+    try {
+      room = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('room') : null;
+    } catch (e) { room = null; }
+    if (!room) { renderNet(); return; }
+    room.onPeers((ch) => {
+      const mine = ch.peers.find((p) => p.isMe && p.sameTab);
+      if (mine) myPeer = mine.peer;
+      renderNet(); renderLobby();
+    }, () => { room = null; renderNet(); renderLobby(); });
+    room.onConnection(() => renderNet(), () => {});
+    renderNet();
+  }
+
+  // ================================================================
+  // Flujo: menú, práctica, salas
+  // ================================================================
+  function placeAtSpawn(id) {
+    const sp = LOBBY_SPAWNS[hashStr(id || 'me') % LOBBY_SPAWNS.length];
+    Object.assign(me.body, newBody(sp.x, 0, sp.z));
+    camYaw = Math.atan2(LOBBY_C.x - sp.x, LOBBY_C.z - sp.z);
+    me.body.ry = camYaw;
+  }
+  function enterGame() {
+    mode = 'game';
+    G = null; Gat = 0; evPrimed = false; tpPrimed = false; lastEv = 0; lastTp = 0;
+    placeAtSpawn(myId());
+    camTarget.set(me.body.x, me.body.y + 1.6, me.body.z);
+    $('#menu').hidden = true; $('#hud').hidden = false; $('#touch').hidden = !(isTouch || onScreenPad);
+    $('#btnInvite').hidden = !session.multi;
+    $('#btnChat').hidden = !session.multi;
+    $('#results').hidden = true; $('#chatPanel').hidden = true; $('#chatFeed').textContent = '';
+    seenMsg.clear(); bubbles.clear();
+    $('#btnFull').hidden = !fsSupported;
+    $('#btnPad').hidden = isTouch;
+    ready = false; lastLookPub = ''; lastLp = ''; lpCollapsed = false; lastClaim = -1;
+    $('#lookPanel').hidden = true;
+    setView(viewMode);
+    if (!isTouch) goFullscreen();
+    camera.clearViewOffset();
+    SND.init();
+    lastHud = '';
+    keysHintUntil = isTouch ? 0 : nowMs() + 9000;
+    try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); canvas.focus({ preventScroll: true }); } catch (e) { /* sin foco */ }
+  }
+  function startPractice() {
+    session = { multi: false, sala: 'solo', bots: Math.max(1, opts.bots), roundMs: opts.len };
+    iAmHost = true; hadG = false;
+    S = newHostState(session.bots, session.roundMs, nowMs());
+    enterGame();
+  }
+  function createSala() {
+    if (!room || !myPeer) return;
+    const code = newCode();
+    session = { multi: true, sala: code, bots: opts.bots, roundMs: opts.len };
+    iAmHost = true; hadG = false; lastG = null; hostPeerId = myPeer;
+    S = newHostState(session.bots, session.roundMs, nowMs());
+    enterGame();
+    room.presence(myPresenceBase()).catch(() => {});
+    openShare();
+  }
+  function joinSala(code) {
+    code = cleanCode(code);
+    if (!code) return;
+    if (!room || !myPeer) return;
+    session = { multi: true, sala: code, bots: 0, roundMs: 180000 };
+    iAmHost = false; S = null; hadG = false; lastG = null; lastGObj = null; hostPeerId = null;
+    joinGraceUntil = nowMs() + 1800;
+    enterGame();
+    room.presence(myPresenceBase()).catch(() => {});
+  }
+  function leaveGame() {
+    if (session && session.multi && room) room.presence({ s: null, g: null, p: null }).catch(() => {});
+    closeShare();
+    exitFullscreen();
+    if (onScreenPad && !isTouch) { onScreenPad = false; $('#btnPad').setAttribute('aria-pressed', 'false'); }
+    mode = 'menu'; session = null; iAmHost = false; S = null; G = null; lastG = null; lastGObj = null; hadG = false;
+    for (const [id, av] of avatars) if (id !== '__me') { disposeAvatar(av); avatars.delete(id); }
+    syncOrbs([], 0);
+    rebuildWorld(0); applyMutationVisuals(0);
+    Object.assign(me.body, newBody(LOBBY_C.x, 0.6, LOBBY_C.z));
+    $('#lookPanel').hidden = true; $('#lobbyPanel').hidden = true;
+    $('#menu').hidden = false; $('#hud').hidden = true; $('#touch').hidden = true; $('#joyHint').hidden = false;
+    SND.setHum(0);
+    $('#results').hidden = true; $('#chatPanel').hidden = true; $('#chatFeed').textContent = '';
+    if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch (e) { /* nada */ } }
+    renderLobby();
+  }
+
+  // ================================================================
+  // Entrada: teclado, ratón, táctil
+  // ================================================================
+  // Solo cuenta como "escribiendo" si el campo de texto está visible (en Safari el foco puede quedarse en un campo oculto).
+  const typing = () => { const el = document.activeElement; return !!(el && el.tagName === 'INPUT' && el.offsetParent !== null); };
+  // e.code es la posición física de la tecla: funciona con cualquier distribución de teclado.
+  const KEYMAP = { KeyW: 'w', ArrowUp: 'w', KeyS: 's', ArrowDown: 's', KeyA: 'a', ArrowLeft: 'a', KeyD: 'd', ArrowRight: 'd',
+    Space: 'jump', ShiftLeft: 'dash', ShiftRight: 'dash', KeyK: 'dash' };
+  function keyName(e) {
+    if (KEYMAP[e.code]) return KEYMAP[e.code];
+    const k = (e.key || '').toLowerCase();
+    if (k === ' ' || k === 'spacebar') return 'jump';
+    if (k === 'shift') return 'dash';
+    if (k === 'arrowup') return 'w';
+    if (k === 'arrowdown') return 's';
+    if (k === 'arrowleft') return 'a';
+    if (k === 'arrowright') return 'd';
+    return ['w', 'a', 's', 'd'].includes(k) ? k : '';
+  }
+  let keysHintUntil = 0, keyCount = 0, onScreenPad = false;
+  window.addEventListener('keydown', (e) => {
+    keyCount++;
+    if (mode === 'game' && session && session.multi && !typing()) {
+      if (e.key === 'Enter') { e.preventDefault(); openChat(); return; }
+    }
+    if (e.key === 'Escape' && !$('#chatPanel').hidden) { closeChat(); return; }
+    if (typing() || mode !== 'game') return;
+    if (e.code === 'KeyV' && !e.repeat) { e.preventDefault(); setView(viewMode === 'fp' ? 'tp' : 'fp'); return; }
+    const k = keyName(e);
+    if (!k) return;
+    e.preventDefault();
+    if (k === 'jump') { if (!e.repeat) jumpQueued = true; return; }
+    if (k === 'dash') { if (!e.repeat) dashQueued = true; return; }
+    keys.add(k);
+    keysHintUntil = Math.min(keysHintUntil, nowMs() + 1500);
+  }, true);
+  window.addEventListener('keyup', (e) => { const k = keyName(e); if (k) keys.delete(k); }, true);
+  window.addEventListener('blur', () => keys.clear());
+
+  let look1 = null, joy = null;
+  const joyEl = $('#joy'), knob = $('#joyKnob'), touchEl = $('#touch');
+  function lookMove(dx, dy) {
+    if (mode === 'menu') { menuYaw -= dx * 0.008; return; }
+    const k = look1 && look1.touch ? 0.0062 : 0.0045;
+    camYaw -= dx * k;
+    camPitch = viewMode === 'fp' ? clamp(camPitch + dy * k * 0.8, -1.2, 1.3) : clamp(camPitch + dy * k * 0.8, -0.15, 1.25);
+  }
+  // Pantalla completa: además de dar más espacio, garantiza que el teclado llegue al juego
+  // cuando la página está incrustada junto a un chat que se queda con el foco.
+  const rootEl = document.documentElement;
+  const fsSupported = !!(rootEl.requestFullscreen || rootEl.webkitRequestFullscreen);
+  const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  function goFullscreen() {
+    const fn = rootEl.requestFullscreen || rootEl.webkitRequestFullscreen;
+    if (!fn || isFull()) return;
+    try { const r = fn.call(rootEl); if (r && r.catch) r.catch(() => {}); } catch (e) { /* no permitido */ }
+  }
+  function exitFullscreen() {
+    const fn = document.exitFullscreen || document.webkitExitFullscreen;
+    if (fn && isFull()) { try { const r = fn.call(document); if (r && r.catch) r.catch(() => {}); } catch (e) { /* nada */ } }
+  }
+  function grabKeyboard() {
+    try { window.focus(); if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); canvas.focus({ preventScroll: true }); } catch (e) { /* sin foco */ }
+  }
+  function enableTouchUi() {
+    if (isTouch) return;
+    isTouch = true;
+    if (mode === 'game') touchEl.hidden = false;
+  }
+  function onDown(e) {
+    if (e.target.closest && e.target.closest('.tbtn')) return;
+    const touchLike = e.pointerType !== 'mouse';
+    if (touchLike) enableTouchUi();
+    else grabKeyboard();
+    if ((touchLike || onScreenPad) && mode === 'game' && e.clientX < window.innerWidth * 0.45 && !joy) {
+      joy = { id: e.pointerId, ox: e.clientX, oy: e.clientY };
+      joyEl.style.left = e.clientX + 'px'; joyEl.style.top = e.clientY + 'px';
+      joyEl.hidden = false; $('#joyHint').hidden = true;
+      knob.style.transform = '';
+    } else if (!look1) {
+      look1 = { id: e.pointerId, x: e.clientX, y: e.clientY, touch: touchLike };
+    } else return;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) { /* sin captura */ }
+  }
+  function onMove(e) {
+    if (joy && e.pointerId === joy.id) {
+      let dx = e.clientX - joy.ox, dy = e.clientY - joy.oy;
+      const d = Math.hypot(dx, dy), R = 55;
+      if (d > R) { dx *= R / d; dy *= R / d; }
+      joyVec.x = dx / R; joyVec.y = -dy / R;
+      knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    } else if (look1 && e.pointerId === look1.id) {
+      lookMove(e.clientX - look1.x, e.clientY - look1.y);
+      look1.x = e.clientX; look1.y = e.clientY;
+    }
+  }
+  function onUp(e) {
+    if (joy && e.pointerId === joy.id) { joy = null; joyVec.x = 0; joyVec.y = 0; joyEl.hidden = true; }
+    if (look1 && e.pointerId === look1.id) look1 = null;
+  }
+  for (const el of [canvas, touchEl]) {
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+  }
+  function holdButton(el, fn) {
+    el.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); el.classList.add('down'); fn(); });
+    const up = () => el.classList.remove('down');
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
+  }
+  // Si el dispositivo no se detectó como táctil, el primer toque muestra los controles igualmente.
+  window.addEventListener('touchstart', () => enableTouchUi(), { passive: true });
+  if (!window.PointerEvent) {
+    const fake = (type) => (ev) => {
+      for (const tch of ev.changedTouches) {
+        const e2 = { pointerId: tch.identifier + 1000, pointerType: 'touch', clientX: tch.clientX, clientY: tch.clientY, target: ev.target, currentTarget: touchEl };
+        if (type === 'down') onDown(e2); else if (type === 'move') onMove(e2); else onUp(e2);
+      }
+      if (ev.cancelable) ev.preventDefault();
+    };
+    touchEl.addEventListener('touchstart', fake('down'), { passive: false });
+    touchEl.addEventListener('touchmove', fake('move'), { passive: false });
+    touchEl.addEventListener('touchend', fake('up'));
+    touchEl.addEventListener('touchcancel', fake('up'));
+  }
+  holdButton($('#btnJump'), () => { jumpQueued = true; });
+  holdButton($('#btnDash'), () => { dashQueued = true; });
+
+  // ================================================================
+  // Jugador local
+  // ================================================================
+  function stepMe(t, dt) {
+    const mods = modsFor(myId(), t);
+    let ix = joyVec.x, iy = joyVec.y;
+    if (keys.has('w')) iy += 1;
+    if (keys.has('s')) iy -= 1;
+    if (keys.has('d')) ix += 1;
+    if (keys.has('a')) ix -= 1;
+    const fx = Math.sin(camYaw), fz = Math.cos(camYaw), rx = -Math.cos(camYaw), rz = Math.sin(camYaw);
+    const wx = fx * iy + rx * ix, wz = fz * iy + rz * ix;
+    if (jumpQueued) { if (tryJump(me.body, mods, t)) SND.jump(); jumpQueued = false; }
+    if (dashQueued) { tryDash(me.body, mods); dashQueued = false; }
+    stepBody(me.body, wx, wz, dt, mods, t);
+    ventCheck(me.body, t, true);
+  }
+
+  // ================================================================
+  // HUD
+  // ================================================================
+  let lastHud = '', lastRoster = '', lastEvos = '', lastCountSec = -1, lastPhase = '', lastResSig = '';
+  function renderResults(rem) {
+    const ids = entityIds(), lost = new Map(G && Array.isArray(G.l) ? G.l : []);
+    const los = G.los;
+    const sig = ids.join(',') + '|' + JSON.stringify(G.l) + '|' + los + '|' + iAmHost + '|' + G.r;
+    if (sig !== lastResSig) {
+      lastResSig = sig;
+      $('#resRound').textContent = `Ronda ${num(G.r)} terminada`;
+      $('#resSub').textContent = !los ? 'Nadie se quedó con la lleva' : los === myId() ? 'Te quedaste con la lleva: pierdes esta ronda' : `${nameOf(los)} se quedó con la lleva`;
+      const sorted = ids.slice().sort((a, b) => (lost.get(a) || 0) - (lost.get(b) || 0));
+      const worst = Math.max(0, ...sorted.map((id) => lost.get(id) || 0));
+      const ol = $('#resTable'); ol.textContent = '';
+      for (const id of sorted) {
+        const n = lost.get(id) || 0;
+        const li = document.createElement('li'); if (n && n === worst) li.className = 'worst';
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colorOf(id);
+        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(id) + (id === myId() ? ' (tú)' : '');
+        const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = n ? `perdió ${n} ${n === 1 ? 'vez' : 'veces'}` : 'invicto';
+        li.append(dot, nm, sc); ol.appendChild(li);
+      }
+      $('#resHost').hidden = !iAmHost;
+      $('#resGuest').hidden = iAmHost;
+      $('#resWait').textContent = `Esperando a que ${String(G.hn || 'el anfitrión').slice(0, 12)} elija…`;
+    }
+    const secs = Math.ceil(rem / 1000);
+    const auto = iAmHost ? `Si no eliges, empieza otra ronda en ${secs} s` : `Si nadie elige, la siguiente ronda empieza en ${secs} s`;
+    const ra = $('#resAuto'); if (ra.textContent !== auto) ra.textContent = auto;
+  }
+  function showMenuNotice(text) {
+    const el = $('#menuNotice'); el.textContent = text; el.hidden = false;
+    setTimeout(() => { el.hidden = true; }, 9000);
+  }
+  function endedByHost() {
+    leaveGame();
+    showMenuNotice('El anfitrión terminó la partida. ¡Gracias por jugar!');
+  }
+  function toast(text, hot) {
+    const box = $('#toasts');
+    const el = document.createElement('div');
+    el.className = 'toast' + (hot ? ' hot' : '');
+    el.textContent = text;
+    box.appendChild(el);
+    while (box.children.length > 3) box.firstChild.remove();
+    setTimeout(() => el.remove(), 2700);
+  }
+  function entityIds() {
+    const ids = [myId()];
+    for (const p of salaPeers()) if (!(p.isMe && p.sameTab)) ids.push(p.peer);
+    if (G && Array.isArray(G.b)) for (const b of G.b) ids.push(b[0]);
+    return ids;
+  }
+  function colorOf(id) {
+    if (id === myId()) return COLORS[look.c];
+    if (G && Array.isArray(G.b)) { const b = G.b.find((a) => a[0] === id); if (b) return COLORS[clamp(num(b[5]) | 0, 0, 7)]; }
+    if (room) { const p = room.peers().find((q) => q.peer === id); if (p) return COLORS[clamp(num(p.presence.c) | 0, 0, 7)]; }
+    return COLORS[0];
+  }
+  function updateHud(t) {
+    const rem = remaining(t), ph = G ? G.ph : '';
+    const it = G ? G.it : '';
+    const ids = entityIds();
+    let timer = '--:--', status = '', isIt = false;
+    if (!G) status = session.multi ? 'Conectando con la sala…' : 'Preparando…';
+    else if (ph === 'w') { timer = ''; status = `Sala de espera · ${ids.length} ${ids.length === 1 ? 'jugador' : 'jugadores'}`; }
+    else if (ph === 'c') { timer = String(Math.max(1, Math.ceil(rem / 1000))); status = '¡Prepárate!'; }
+    else if (ph === 'p') {
+      timer = fmtTime(rem);
+      isIt = it === myId();
+      status = isIt ? '¡TÚ LA LLEVAS! Toca a alguien' : `Huye de ${nameOf(it)}`;
+    } else if (ph === 'o') { timer = '0:00'; status = 'Fin de la ronda'; }
+    const urgent = ph === 'p' && rem < 30000;
+    const sig = timer + '|' + status + '|' + isIt + '|' + urgent;
+    if (sig !== lastHud) {
+      lastHud = sig;
+      const tEl = $('#timer'); tEl.textContent = timer; tEl.classList.toggle('urgent', urgent);
+      const sEl = $('#status'); sEl.textContent = status; sEl.classList.toggle('is-it', isIt);
+    }
+    // Pitidos de cuenta regresiva y cambios de fase
+    if (ph === 'c') { const sec = Math.ceil(rem / 1000); if (sec !== lastCountSec) { lastCountSec = sec; SND.beep(520); } } else lastCountSec = -1;
+    const resEl = $('#results'), showRes = ph === 'o';
+    if (resEl.hidden === showRes) { resEl.hidden = !showRes; if (showRes) lastResSig = ''; }
+    if (showRes) renderResults(rem);
+    lastPhase = ph;
+
+    // Sala de espera: panel con jugadores y botón Empezar; fuera de ella, lista y minimapa
+    const inWait = ph === 'w';
+    const lp = $('#lobbyPanel');
+    if (lp.hidden === inWait) lp.hidden = !inWait;
+    if (inWait) renderLobbyPanel();
+    const ro = $('#roster'); if (ro.hidden !== inWait) ro.hidden = inWait;
+    const mmVis = inWait ? 'none' : '';
+    if (mm.style.display !== mmVis) mm.style.display = mmVis;
+    const ai = areaAt(me.body.x, me.body.z);
+    const rn = ai >= 0 && !inWait ? AREAS[ai].name : '';
+    const rnEl = $('#roomName'); if (rnEl.textContent !== rn) rnEl.textContent = rn;
+
+    // Lista de jugadores
+    const lost = new Map(G && Array.isArray(G.l) ? G.l : []);
+    const rs = ids.map((id) => id + ':' + nameOf(id) + ':' + (id === it) + ':' + shieldOf(id) + ':' + (lost.get(id) || 0) + ':' + colorOf(id)).join('|');
+    if (rs !== lastRoster) {
+      lastRoster = rs;
+      const ol = $('#roster'); ol.textContent = '';
+      for (const id of ids) {
+        const li = document.createElement('li');
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colorOf(id); li.appendChild(dot);
+        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(id) + (id === myId() ? ' (tú)' : ''); li.appendChild(nm);
+        if (id === it) { const b = document.createElement('span'); b.className = 'badge it'; b.textContent = 'LA LLEVA'; li.appendChild(b); }
+        if (shieldOf(id) > 0) { const b = document.createElement('span'); b.className = 'badge sh'; b.textContent = 'ESCUDO'; li.appendChild(b); }
+        const l = lost.get(id) || 0;
+        if (l) { const s = document.createElement('span'); s.className = 'lost'; s.textContent = `perdió ${l}`; li.appendChild(s); }
+        ol.appendChild(li);
+      }
+    }
+
+    // Evoluciones activas del jugador local
+    const fx = fxFor(myId(), t);
+    const ev = fx.map((f) => f.k + ':' + Math.ceil(f.left / 1000)).join('|') + '|' + shieldOf(myId());
+    if (ev !== lastEvos) {
+      lastEvos = ev;
+      const box = $('#evos'); box.textContent = '';
+      for (const f of fx) {
+        const el = document.createElement('span'); el.className = 'evo';
+        el.style.background = PU[f.k].css; el.textContent = `${PU[f.k].name} ${Math.ceil(f.left / 1000)}s`;
+        box.appendChild(el);
+      }
+      if (shieldOf(myId()) > 0) { const el = document.createElement('span'); el.className = 'evo'; el.style.background = PU[3].css; el.textContent = 'Escudo listo'; box.appendChild(el); }
+    }
+
+    // Cargas de dash en el botón táctil
+    if (isTouch) {
+      const mods = modsFor(myId(), t), pips = $('#dashPips');
+      const sigD = mods.dash + ':' + me.body.dashUsed;
+      if (pips.dataset.sig !== sigD) {
+        pips.dataset.sig = sigD; pips.textContent = '';
+        for (let i = 0; i < mods.dash; i++) { const p = document.createElement('i'); if (i < me.body.dashUsed) p.className = 'off'; pips.appendChild(p); }
+        $('#btnDash').style.opacity = mods.dash ? '1' : '0.45';
+      }
+    }
+    const kh = $('#keysHint'), showKeys = !isTouch && t < keysHintUntil;
+    if (kh.hidden === showKeys) kh.hidden = !showKeys;
+    const fh = $('#focusHint'), needFocus = !isTouch && !document.hasFocus() && $('#share').hidden;
+    if (fh.hidden === needFocus) fh.hidden = !needFocus;
+    const tag = session.multi ? `Sala ${session.sala.toUpperCase()} · ${ids.length} en juego` : 'Práctica con bots';
+    const rt = $('#roomTag'); if (rt.textContent !== tag) rt.textContent = tag;
+  }
+
+  function audioTick(t) {
+    if (!SND.ctx) return;
+    const ph = G ? G.ph : '';
+    if (ph !== 'p') { SND.setHum(0); return; }
+    const it = G.it, rem = remaining(t);
+    let tension = 1 - clamp(rem / 60000, 0, 1);
+    if (it === myId()) { tension = Math.max(tension, 0.25); SND.setHum(0.03); }
+    else {
+      const av = avatars.get(it === myId() ? '__me' : it);
+      if (av) {
+        const d = Math.hypot(av.dx - me.body.x, av.dz - me.body.z);
+        const prox = clamp(1 - d / 22, 0, 1);
+        SND.setHum(prox * prox * 0.22);
+        tension = Math.max(tension, prox * 0.9);
+      }
+    }
+    if (tension > 0.08 && t >= SND.nextBeat) {
+      SND.thump(0.4 + tension * 0.6);
+      SND.nextBeat = t + lerp(1050, 380, tension);
+    }
+  }
+
+  // ================================================================
+  // Render
+  // ================================================================
+  function renderWorld(t, dt) {
+    const seen = new Set(['__me']);
+    const meAv = ensureAvatar('__me', look);
+    const myIt = !!(G && G.ph === 'p' && G.it === myId());
+    updateAvatar(meAv, me.body.x, me.body.y, me.body.z, me.body.ry,
+      { it: myIt, cheer: !!(G && G.ph === 'o' && G.los !== myId()), evo: fxFor(myId(), t).length, shield: shieldOf(myId()), name: bubbleFor(myId()) || look.name, mine: true, smooth: 60 }, t, dt);
+    const fp = mode === 'game' && viewMode === 'fp';
+    meAv.root.visible = !fp; meAv.shadow.visible = !fp; if (fp) meAv.trail.visible = false;
+
+    if (mode === 'game') {
+      for (const p of salaPeers()) {
+        if (p.isMe && p.sameTab) continue;
+        const pr = p.presence, a = pr.p;
+        if (!Array.isArray(a)) continue;
+        const lk = { c: clamp(num(pr.c) | 0, 0, 7), h: clamp(num(pr.h) | 0, 0, HATS.length - 1), k: clamp(num(pr.k) | 0, 0, CAPES.length - 1) };
+        const av = ensureAvatar(p.peer, lk); seen.add(p.peer);
+        updateAvatar(av, num(a[0]), num(a[1]), num(a[2]), num(a[3]),
+          { it: !!(G && G.ph === 'p' && G.it === p.peer), cheer: !!(G && G.ph === 'o' && G.los !== p.peer), evo: fxFor(p.peer, t).length, shield: shieldOf(p.peer), name: bubbleFor(p.peer) || nameOf(p.peer), mine: false }, t, dt);
+      }
+      if (G && Array.isArray(G.b)) {
+        for (const b of G.b) {
+          const id = String(b[0]);
+          const av = ensureAvatar(id, { c: clamp(num(b[5]) | 0, 0, 7), h: clamp(num(b[6]) | 0, 0, HATS.length - 1), k: clamp(num(b[7]) | 0, 0, CAPES.length - 1) });
+          seen.add(id);
+          updateAvatar(av, num(b[1]), num(b[2]), num(b[3]), num(b[4]),
+            { it: G.ph === 'p' && G.it === id, cheer: G.ph === 'o' && G.los !== id, evo: fxFor(id, t).length, shield: shieldOf(id), name: nameOf(id), mine: false, smooth: iAmHost ? 40 : 14 }, t, dt);
+        }
+      }
+      syncOrbs(G && Array.isArray(G.o) ? G.o : [], t);
+    }
+    for (const [id, av] of avatars) if (!seen.has(id)) { disposeAvatar(av); avatars.delete(id); }
+  }
+
+  // ¿La cámara chocaría con una pared u objeto en este punto? (usa la altura visible de las paredes)
+  function camBlocked(x, y, z) {
+    for (const b of world.boxes) {
+      const top = b.vis || b.y1;
+      if (y < top + 0.15 && y > b.y0 - 0.1 && x > b.x0 - 0.2 && x < b.x1 + 0.2 && z > b.z0 - 0.2 && z < b.z1 + 0.2) return true;
+    }
+    return false;
+  }
+  let camDist = 1;
+  function updateCamera(dt) {
+    const b = me.body;
+    if (mode === 'menu') {
+      menuYaw += dt * 0.22;
+      const w = window.innerWidth, h = window.innerHeight, wide = w >= 760, near = menuTab === 'look';
+      const d = (wide ? 4.6 : 6.0 / Math.min(1, w / h + 0.25)) * (near ? 0.72 : 1), tx = b.x, ty = b.y + 1.05, tz = b.z;
+      camera.position.set(tx + Math.sin(menuYaw) * d, ty + 0.8, tz + Math.cos(menuYaw) * d);
+      camera.lookAt(tx, ty, tz);
+      if (wide) camera.setViewOffset(w, h, -Math.round(w * 0.2), 0, w, h);
+      else camera.setViewOffset(w, h, 0, Math.round(h * 0.3), w, h);
+      return;
+    }
+    const k = 1 - Math.exp(-14 * dt);
+    camTarget.x = lerp(camTarget.x, b.x, k); camTarget.y = lerp(camTarget.y, b.y + 1.6, k); camTarget.z = lerp(camTarget.z, b.z, k);
+    if (viewMode === 'fp') {
+      // Primera persona: la cámara va en los ojos del personaje
+      const av = avatars.get('__me');
+      const eye = camTarget.y - 1.6 + 1.5 * (av ? av.scale : 1);
+      camera.position.set(b.x, eye, b.z);
+      const cp = Math.cos(camPitch);
+      camera.lookAt(b.x + Math.sin(camYaw) * cp, eye - Math.sin(camPitch), b.z + Math.cos(camYaw) * cp);
+      return;
+    }
+    // Tercera persona: detrás y por encima; se acerca si una pared se mete en medio
+    const d = 7.5, cp = Math.cos(camPitch), sp = Math.sin(camPitch);
+    const px = camTarget.x - Math.sin(camYaw) * d * cp, py = camTarget.y + d * sp, pz = camTarget.z - Math.cos(camYaw) * d * cp;
+    let f = 1;
+    const steps = 30;
+    for (let i = 3; i <= steps; i++) {
+      const u = i / steps;
+      if (camBlocked(lerp(camTarget.x, px, u), lerp(camTarget.y, py, u), lerp(camTarget.z, pz, u))) { f = Math.max(0.15, (i - 1.5) / steps); break; }
+    }
+    camDist = f < camDist ? f : lerp(camDist, f, 1 - Math.exp(-4 * dt));
+    camera.position.set(lerp(camTarget.x, px, camDist), lerp(camTarget.y, py, camDist), lerp(camTarget.z, pz, camDist));
+    const fl = floorAt(camera.position.x, camera.position.z, camera.position.y);
+    if (camera.position.y < fl + 0.4) camera.position.y = fl + 0.4;
+    camera.lookAt(camTarget);
+  }
+  function setView(v) {
+    viewMode = v; save('tagverse.view', v);
+    camPitch = v === 'fp' ? 0.12 : 0.62;
+    const btn = $('#btnView');
+    if (btn) { btn.textContent = v === 'fp' ? 'Vista: 1ª persona' : 'Vista: 3ª persona'; btn.setAttribute('aria-pressed', String(v === 'fp')); }
+  }
+
+  // ================================================================
+  // Chat de la sala (texto + lectura en voz alta). Viaja en la presencia de cada jugador.
+  // ================================================================
+  const QUICK = ['¡Ven por mí!', '¡Cuidado, viene!', '¡Te tengo!', '¡Ayuda!', 'Jajaja', 'Buena partida'];
+  let chatSeq = 0, ttsOn = load('tagverse.tts') === true;
+  const seenMsg = new Map(), bubbles = new Map();
+  function cleanText(v) {
+    return Array.from(String(v || '')).filter((ch) => {
+      const c = ch.codePointAt(0);
+      return c >= 32 && !(c >= 127 && c <= 159) && !(c >= 0x200b && c <= 0x200f) && !(c >= 0x2028 && c <= 0x202e) && !(c >= 0x2060 && c <= 0x206f);
+    }).join('').trim().slice(0, 80);
+  }
+  function bubbleFor(id) {
+    const b = bubbles.get(id);
+    if (!b) return '';
+    if (nowMs() > b.until) { bubbles.delete(id); return ''; }
+    return b.text.length > 24 ? b.text.slice(0, 23) + '…' : b.text;
+  }
+  function speak(text) {
+    if (!ttsOn || !window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'es-ES'; u.rate = 1.05;
+      const v = speechSynthesis.getVoices().find((x) => /^es/i.test(x.lang));
+      if (v) u.voice = v;
+      speechSynthesis.speak(u);
+    } catch (e) { /* sin voz */ }
+  }
+  function addChat(id, text, mine) {
+    if (!text) return;
+    const feed = $('#chatFeed');
+    const line = document.createElement('div'); line.className = 'chat-line';
+    const who = document.createElement('b'); who.textContent = (mine ? 'Tú' : nameOf(id)) + ':'; who.style.color = colorOf(id);
+    line.append(who, document.createTextNode(text));
+    feed.appendChild(line);
+    while (feed.children.length > 5) feed.firstChild.remove();
+    setTimeout(() => line.remove(), 9200);
+    bubbles.set(id, { text, until: nowMs() + 4500 });
+    if (!mine) { speak(`${nameOf(id)} dice: ${text}`); SND.beep(1200); }
+  }
+  function sendChat(text) {
+    text = cleanText(text);
+    if (!text || !session || !session.multi || !room) return;
+    chatSeq++;
+    room.presence({ m: [chatSeq, text] }).catch(() => {});
+    addChat(myId(), text, true);
+  }
+  function pollChat() {
+    for (const p of salaPeers()) {
+      if (p.isMe && p.sameTab) continue;
+      const m = p.presence.m;
+      if (!Array.isArray(m)) { if (!seenMsg.has(p.peer)) seenMsg.set(p.peer, 0); continue; }
+      const seq = num(m[0]), last = seenMsg.get(p.peer);
+      if (last === undefined) { seenMsg.set(p.peer, seq); continue; }   // mensajes viejos al entrar: no se repiten
+      if (seq > last) { seenMsg.set(p.peer, seq); addChat(p.peer, cleanText(m[1]), false); }
+    }
+  }
+  function openChat() {
+    $('#chatPanel').hidden = false;
+    if (!isTouch) setTimeout(() => $('#chatInput').focus(), 0);
+  }
+  function closeChat() { $('#chatPanel').hidden = true; $('#chatInput').blur(); grabKeyboard(); }
+  {
+    const q = $('#quick');
+    for (const phrase of QUICK) {
+      const b = document.createElement('button'); b.type = 'button'; b.textContent = phrase;
+      b.addEventListener('click', () => { sendChat(phrase); closeChat(); });
+      q.appendChild(b);
+    }
+    $('#btnChat').addEventListener('click', () => ($('#chatPanel').hidden ? openChat() : closeChat()));
+    $('#btnChatClose').addEventListener('click', closeChat);
+    $('#chatForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const inp = $('#chatInput');
+      sendChat(inp.value); inp.value = '';
+      closeChat();
+    });
+    const tts = $('#ttsToggle');
+    tts.checked = ttsOn;
+    tts.addEventListener('change', () => {
+      ttsOn = tts.checked; save('tagverse.tts', ttsOn);
+      if (ttsOn) speak('Voz activada');
+    });
+    $('#btnAgain').addEventListener('click', () => hostAction('again'));
+    $('#btnReset').addEventListener('click', () => hostAction('reset'));
+    $('#btnEnd').addEventListener('click', () => hostAction('end'));
+    $('#btnResLeave').addEventListener('click', () => { leaveGame(); showMenuNotice('Saliste de la sala.'); });
+  }
+
+  // ================================================================
+  // Minimapa: tú en el centro, la dirección de la cámara hacia arriba.
+  // ================================================================
+  const mm = $('#minimap'), mmCtx = mm.getContext('2d');
+  let mmBig = !!load('tagverse.mmBig'), mmSize = 0;
+  mm.addEventListener('click', () => { mmBig = !mmBig; save('tagverse.mmBig', mmBig); });
+  mm.addEventListener('pointerdown', (e) => e.stopPropagation());
+  const MM_FILL = { plat: 'rgba(124,100,230,0.55)', neon: 'rgba(53,224,255,0.45)', rubble: 'rgba(170,120,140,0.5)', wall: 'rgba(120,110,190,0.6)', grav: 'rgba(109,255,122,0.55)' };
+  function sizeMinimap() {
+    const base = Math.min(window.innerWidth, window.innerHeight) < 500 ? 112 : 156;
+    const css = mmBig ? Math.round(base * 1.55) : base;
+    if (css === mmSize) return;
+    mmSize = css;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    mm.width = Math.round(css * dpr); mm.height = Math.round(css * dpr);
+    mm.style.width = css + 'px'; mm.style.height = css + 'px';
+    mmCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  function drawMinimap(t) {
+    sizeMinimap();
+    const c = mmCtx, size = mmSize, R = size / 2;
+    const range = mmBig ? 34 : 24, k = (R - 7) / range;
+    const fx = Math.sin(camYaw), fz = Math.cos(camYaw), rx = -Math.cos(camYaw), rz = Math.sin(camYaw);
+    const mx = me.body.x, mz = me.body.z;
+    const P = (x, z) => { const dx = x - mx, dz = z - mz; return [R + (dx * rx + dz * rz) * k, R - (dx * fx + dz * fz) * k]; };
+    const poly = (pts) => { c.beginPath(); pts.forEach(([x, z], i) => { const [u, v] = P(x, z); if (i) c.lineTo(u, v); else c.moveTo(u, v); }); c.closePath(); };
+
+    c.clearRect(0, 0, size, size);
+    c.save();
+    c.beginPath(); c.arc(R, R, R - 1, 0, Math.PI * 2); c.clip();
+    c.fillStyle = 'rgba(12,9,32,0.86)'; c.fillRect(0, 0, size, size);
+
+    // Anillos de distancia (cada 10 m)
+    c.strokeStyle = 'rgba(170,156,255,0.12)'; c.lineWidth = 1;
+    for (let d = 10; d < range; d += 10) { c.beginPath(); c.arc(R, R, d * k, 0, Math.PI * 2); c.stroke(); }
+
+    // Plano de la estación: suelos, paredes, objetos, compuertas y conductos
+    c.fillStyle = 'rgba(70,62,150,0.8)';
+    for (const a of AREAS) { poly([[a.x0, a.z0], [a.x1, a.z0], [a.x1, a.z1], [a.x0, a.z1]]); c.fill(); }
+    for (const b of world.boxes) {
+      if (b.cond === 'door') c.fillStyle = '#ff3d6a';
+      else if (b.mat === 'wall') c.fillStyle = 'rgba(160,140,240,0.95)';
+      else c.fillStyle = 'rgba(220,210,255,0.35)';
+      poly([[b.x0, b.z0], [b.x1, b.z0], [b.x1, b.z1], [b.x0, b.z1]]); c.fill();
+    }
+    if (world.mask & 4) { poly([[GRAV.x0, GRAV.z0], [GRAV.x1, GRAV.z0], [GRAV.x1, GRAV.z1], [GRAV.x0, GRAV.z1]]); c.strokeStyle = '#6dff7a'; c.lineWidth = 2; c.stroke(); }
+    if (world.mask & 2) {
+      c.fillStyle = '#6dff7a';
+      for (const v of VENTS) { const [u, w] = P(v.x, v.z); c.fillRect(u - 3, w - 3, 6, 6); }
+    }
+    if (mmBig) {
+      c.font = '600 10px "Chakra Petch", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillStyle = 'rgba(242,239,255,0.85)';
+      for (const r of LAYOUT.rooms) { const [u, w] = P((r.x0 + r.x1) / 2, (r.z0 + r.z1) / 2); c.fillText(r.name, u, w); }
+    }
+
+    // Orbes
+    if (G && Array.isArray(G.o)) for (const o of G.o) {
+      const [u, v] = P(num(o[2]), num(o[4]));
+      c.fillStyle = PU[clamp(num(o[1]) | 0, 0, PU.length - 1)].css;
+      c.beginPath(); c.arc(u, v, mmBig ? 3.2 : 2.6, 0, Math.PI * 2); c.fill();
+    }
+
+    // Otros jugadores y bots (en el borde si están fuera de rango)
+    const itId = G && G.ph === 'p' ? G.it : '';
+    for (const [id, av] of avatars) {
+      if (id === '__me') continue;
+      let [u, v] = P(av.dx, av.dz);
+      const ox = u - R, oy = v - R, d = Math.hypot(ox, oy), lim = R - 7;
+      const edge = d > lim;
+      if (edge) { u = R + ox / d * lim; v = R + oy / d * lim; }
+      const isIt = id === itId;
+      if (isIt) {
+        c.strokeStyle = 'rgba(255,61,154,0.9)'; c.lineWidth = 2;
+        c.beginPath(); c.arc(u, v, 7.5 + Math.sin(t * 0.01) * 1.5, 0, Math.PI * 2); c.stroke();
+      }
+      c.fillStyle = isIt ? '#ff3d9a' : colorOf(id);
+      c.strokeStyle = 'rgba(0,0,0,0.7)'; c.lineWidth = 1.5;
+      c.globalAlpha = edge ? 0.75 : 1;
+      c.beginPath(); c.arc(u, v, isIt ? 5 : 3.8, 0, Math.PI * 2); c.fill(); c.stroke();
+      c.globalAlpha = 1;
+      // Altura: triángulo arriba/abajo si está mucho más alto o más bajo que tú
+      const dy = av.dy - me.body.y;
+      if (Math.abs(dy) > 2) {
+        const s = dy > 0 ? -1 : 1, y0 = v + s * 9;
+        c.fillStyle = '#f2efff';
+        c.beginPath(); c.moveTo(u, y0 - s * 3); c.lineTo(u - 3, y0 + s * 1.5); c.lineTo(u + 3, y0 + s * 1.5); c.closePath(); c.fill();
+      }
+    }
+
+    // Tú: flecha en el centro según hacia dónde miras
+    const sx = Math.sin(me.body.ry), sz = Math.cos(me.body.ry);
+    const ang = Math.atan2(sx * rx + sz * rz, sx * fx + sz * fz);
+    c.translate(R, R); c.rotate(ang);
+    c.fillStyle = itId && itId === myId() ? '#ff3d9a' : COLORS[look.c];
+    c.strokeStyle = '#0b0a1a'; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0, -8); c.lineTo(5.5, 6); c.lineTo(0, 3); c.lineTo(-5.5, 6); c.closePath(); c.fill(); c.stroke();
+    c.restore();
+
+    c.strokeStyle = 'rgba(170,156,255,0.5)'; c.lineWidth = 1.5;
+    c.beginPath(); c.arc(R, R, R - 1, 0, Math.PI * 2); c.stroke();
+  }
+
+  // ================================================================
+  // Personalización (se usa en el menú y dentro de la sala de espera)
+  // ================================================================
+  const lookRefreshers = [];
+  function refreshLook() { for (const f of lookRefreshers) f(); }
+  function buildLook(root) {
+    root.textContent = '';
+    const field = (label) => {
+      const f = document.createElement('div'); f.className = 'field';
+      const l = document.createElement('span'); l.className = 'lbl'; l.textContent = label;
+      f.appendChild(l); root.appendChild(f); return f;
+    };
+    const sw = document.createElement('div'); sw.className = 'swatches'; field('Color').appendChild(sw);
+    COLORS.forEach((c, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'swatch'; b.style.background = c; b.style.color = c;
+      b.setAttribute('aria-label', 'Color ' + (i + 1));
+      b.addEventListener('click', () => { look.c = i; saveLook(); refreshLook(); });
+      sw.appendChild(b);
+    });
+    const group = (label, names, key) => {
+      const box = document.createElement('div'); box.className = 'chips'; field(label).appendChild(box);
+      names.forEach((nm, i) => {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = nm;
+        b.addEventListener('click', () => { look[key] = i; saveLook(); refreshLook(); });
+        box.appendChild(b);
+      });
+      return box;
+    };
+    const hats = group('Cabeza', HATS, 'h');
+    const capes = group('Espalda', CAPES, 'k');
+    const refresh = () => {
+      [...sw.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === look.c)));
+      [...hats.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === look.h)));
+      [...capes.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === look.k)));
+    };
+    lookRefreshers.push(refresh);
+    refresh();
+  }
+
+  // ================================================================
+  // Sala de espera: lista de jugadores, ajustes del anfitrión y botón Empezar
+  // ================================================================
+  let ready = false, lastLp = '', lpCollapsed = false;
+  function renderLobbyPanel() {
+    const ids = entityIds();
+    const peers = new Map(salaPeers().map((p) => [p.peer, p]));
+    const hostId = iAmHost ? myId() : hostPeerId;
+    const rows = ids.map((id) => {
+      const p = peers.get(id), bot = /^bot\d$/.test(id);
+      return { id, name: nameOf(id), col: colorOf(id), host: id === hostId, bot, rd: id === myId() ? ready : !!(p && p.presence && p.presence.rd) };
+    });
+    const guests = rows.filter((r) => !r.host && !r.bot), readyN = guests.filter((r) => r.rd).length;
+    const botsN = S ? S.bots.length : (G && Array.isArray(G.b) ? G.b.length : 0);
+    const len = S ? S.roundMs : num(G && G.rm, 180000);
+    const sig = JSON.stringify(rows) + '|' + iAmHost + '|' + botsN + '|' + len + '|' + lpCollapsed;
+    if (sig === lastLp) return;
+    lastLp = sig;
+    $('#lpTitle').textContent = session.multi ? `Sala ${session.sala.toUpperCase()}` : 'Práctica con bots';
+    $('#lpKicker').textContent = `Sala de espera · ${rows.length} ${rows.length === 1 ? 'jugador' : 'jugadores'}`;
+    const ol = $('#lpList'); ol.textContent = '';
+    for (const r of rows) {
+      const li = document.createElement('li');
+      const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = r.col;
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = r.name + (r.id === myId() ? ' (tú)' : '');
+      const tag = document.createElement('span');
+      if (r.host) { tag.className = 'tag host'; tag.textContent = 'Anfitrión'; }
+      else if (r.bot) { tag.className = 'tag bot'; tag.textContent = 'Bot'; }
+      else if (r.rd) { tag.className = 'tag ok'; tag.textContent = 'Listo'; }
+      else { tag.className = 'tag wait'; tag.textContent = 'Esperando'; }
+      li.append(dot, nm, tag);
+      ol.appendChild(li);
+    }
+    $('#lpHost').hidden = !iAmHost;
+    [...$('#lpBots').children].forEach((c, j) => c.setAttribute('aria-pressed', String(j === botsN)));
+    [...$('#lpLen').children].forEach((c, j) => c.setAttribute('aria-pressed', String(LENS[j] === len)));
+    const start = $('#lpStart');
+    start.hidden = !iAmHost;
+    start.disabled = rows.length < 2;
+    start.textContent = guests.length ? `Empezar (${readyN}/${guests.length} listos)` : 'Empezar partida';
+    const rdBtn = $('#lpReady');
+    rdBtn.hidden = iAmHost || !session.multi;
+    rdBtn.textContent = ready ? 'Listo ✓' : 'Estoy listo';
+    rdBtn.setAttribute('aria-pressed', String(ready));
+    $('#lpInvite').hidden = !session.multi;
+    $('#lpHint').textContent = iAmHost
+      ? (rows.length < 2 ? 'Necesitas al menos 2 jugadores: añade bots o invita a alguien.' : 'Pasea por la sala mientras llegan los demás. Pulsa Empezar cuando quieras.')
+      : `Esperando a que ${String((G && G.hn) || 'el anfitrión').slice(0, 12)} empiece la partida.`;
+    $('#lpBody').hidden = lpCollapsed;
+    $('#lpToggle').textContent = lpCollapsed ? 'Mostrar' : 'Ocultar';
+    $('#lpToggle').setAttribute('aria-expanded', String(!lpCollapsed));
+  }
+  const LENS = [120000, 180000, 300000];
+  chips($('#lpBots'), ['0', '1', '2', '3'], () => (S ? S.bots.length : opts.bots), (i) => { opts.bots = i; save('tagverse.opts', opts); hostAction('bots', i); lastLp = ''; });
+  chips($('#lpLen'), ['2 min', '3 min', '5 min'], () => LENS.indexOf(S ? S.roundMs : opts.len), (i) => { opts.len = LENS[i]; save('tagverse.opts', opts); hostAction('len', LENS[i]); lastLp = ''; });
+  $('#lpStart').addEventListener('click', () => { hostAction('start'); grabKeyboard(); });
+  $('#lpReady').addEventListener('click', () => { ready = !ready; lastLp = ''; grabKeyboard(); });
+  $('#lpInvite').addEventListener('click', openShare);
+  $('#lpToggle').addEventListener('click', () => { lpCollapsed = !lpCollapsed; lastLp = ''; });
+  $('#lpLook').addEventListener('click', () => { $('#lookPanel').hidden = false; });
+  $('#lookClose').addEventListener('click', () => { $('#lookPanel').hidden = true; grabKeyboard(); });
+  $('#lookPanel').addEventListener('click', (e) => { if (e.target.id === 'lookPanel') { $('#lookPanel').hidden = true; grabKeyboard(); } });
+  buildLook($('#lookGame'));
+
+  // Recoger orbes: en multijugador el cliente avisa al anfitrión de que tocó uno
+  let lastClaim = -1;
+  function claimOrbs() {
+    if (iAmHost || !room || !G || G.ph !== 'p' || !Array.isArray(G.o)) return;
+    const b = me.body;
+    for (const o of G.o) {
+      const id = num(o[0]);
+      if (id === lastClaim) continue;
+      const oy = num(o[3]);
+      if (Math.hypot(b.x - num(o[2]), b.z - num(o[4])) <= 1.6 && b.y >= oy - 1.0 && b.y <= oy + 2.4) {
+        lastClaim = id;
+        room.presence({ pk: [id] }).catch(() => {});
+        break;
+      }
+    }
+  }
+
+  // ================================================================
+  // Bucle principal
+  // ================================================================
+  let lastT = nowMs(), pubAcc = 0;
+  function frame() {
+    requestAnimationFrame(frame);
+    const t = nowMs();
+    const dt = Math.min((t - lastT) / 1000, 0.05);
+    lastT = t;
+    if (mode === 'game') {
+      if (session.multi) electHost(t);
+      if (iAmHost && S) { hostTick(t, dt); applyG(toWire(S, t), t); }
+      else if (session.multi) {
+        const hp = salaPeers().find((p) => p.peer === hostPeerId);
+        const g = hp && hp.presence.g;
+        if (g && typeof g === 'object' && g !== lastGObj) { lastGObj = g; lastG = g; lastGAt = t; applyG(g, t); }
+      }
+      if (G && G.ph === 'e') {
+        if (!iAmHost) { endedByHost(); return; }
+        if (t >= S.phEnd) { leaveGame(); showMenuNotice('Terminaste la partida. ¡Gracias por jugar!'); return; }
+      }
+      stepMe(t, dt);
+      if (session.multi) { pollChat(); claimOrbs(); }
+      if (session.multi) { pubAcc += dt; if (pubAcc >= 0.066) { pubAcc = 0; publish(); } }
+      updateHud(t);
+      audioTick(t);
+    }
+    renderWorld(t, dt);
+    stationTick(t, dt);
+    if (mode === 'game' && G && G.ph !== 'w') drawMinimap(t);
+    updateCamera(dt);
+    renderer.render(scene, camera);
+  }
+
+  // ================================================================
+  // Menú
+  // ================================================================
+  function chips(el, labels, get, set) {
+    el.textContent = '';
+    labels.forEach((label, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = label;
+      b.setAttribute('aria-pressed', String(get() === i));
+      b.addEventListener('click', () => { set(i); [...el.children].forEach((c, j) => c.setAttribute('aria-pressed', String(get() === j))); });
+      el.appendChild(b);
+    });
+  }
+  function saveLook() { save('tagverse.look', look); }
+  {
+    buildLook($('#lookMenu'));
+    const setTab = (tab) => {
+      menuTab = tab;
+      $('#tabPlay').hidden = tab !== 'play'; $('#tabLook').hidden = tab !== 'look';
+      $('#tabPlayBtn').setAttribute('aria-selected', String(tab === 'play'));
+      $('#tabLookBtn').setAttribute('aria-selected', String(tab === 'look'));
+    };
+    $('#tabPlayBtn').addEventListener('click', () => setTab('play'));
+    $('#tabLookBtn').addEventListener('click', () => setTab('look'));
+    $('#btnView').addEventListener('click', () => { setView(viewMode === 'fp' ? 'tp' : 'fp'); grabKeyboard(); });
+    const inName = $('#inName');
+    inName.value = look.name;
+    inName.addEventListener('input', () => {
+      const v = Array.from(inName.value).filter((ch) => {
+        const c = ch.codePointAt(0);
+        return c >= 32 && !(c >= 127 && c <= 159) && !(c >= 0x200b && c <= 0x200f) && !(c >= 0x2028 && c <= 0x202e) && !(c >= 0x2060 && c <= 0x206f);
+      }).join('').trim().slice(0, 12);
+      look.name = v || 'Jugador'; saveLook();
+    });
+    $('#btnPractice').addEventListener('click', startPractice);
+    $('#btnCreate').addEventListener('click', createSala);
+    $('#btnLeave').addEventListener('click', leaveGame);
+    $('#btnMute').addEventListener('click', (e) => {
+      SND.setMuted(!SND.muted);
+      e.currentTarget.textContent = SND.muted ? 'Sonido: no' : 'Sonido: sí';
+      e.currentTarget.setAttribute('aria-pressed', String(SND.muted));
+    });
+  }
+  function renderNet() {
+    const el = $('#netState'), btn = $('#btnCreate');
+    if (!room) {
+      el.textContent = 'El multijugador no está disponible en esta vista. Puedes practicar contra bots.';
+      btn.disabled = true; return;
+    }
+    const others = room.peers().filter((p) => p.kind === 'viewer' && !(p.isMe && p.sameTab)).length;
+    btn.disabled = !myPeer;
+    el.textContent = '';
+    if (!room.connected() && !myPeer) { el.textContent = 'Conectando…'; return; }
+    const b = document.createElement('b'); b.textContent = 'En línea';
+    el.append(b, others ? ` · ${others} ${others === 1 ? 'persona más tiene' : 'personas más tienen'} esta página abierta.` : ' · Comparte esta página para que tus amigos se unan.');
+  }
+  function renderLobby() {
+    if (mode !== 'menu') return;
+    const el = $('#lobby');
+    const hosts = room ? room.peers().filter((p) => p.kind === 'viewer' && !(p.isMe && p.sameTab) && p.presence && p.presence.v === 1
+      && typeof p.presence.s === 'string' && p.presence.g && typeof p.presence.g === 'object') : [];
+    el.textContent = '';
+    if (!hosts.length) {
+      const pEl = document.createElement('p'); pEl.className = 'empty';
+      pEl.textContent = room ? 'Todavía no hay salas. Crea una y avisa a tus amigos.' : 'Sin conexión multijugador.';
+      el.appendChild(pEl); return;
+    }
+    const PH = { w: 'en la sala de espera', c: 'empezando', p: 'en juego', o: 'entre rondas' };
+    for (const h of hosts) {
+      const g = h.presence.g, s = h.presence.s;
+      const count = room.peers().filter((p) => p.presence && p.presence.v === 1 && p.presence.s === s).length + (Array.isArray(g.b) ? g.b.length : 0);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'room-btn';
+      const left = document.createElement('span'); left.className = 'rleft';
+      const dot = document.createElement('i'); dot.className = 'rdot'; dot.style.background = COLORS[clamp(num(h.presence.c) | 0, 0, 7)]; dot.style.color = COLORS[clamp(num(h.presence.c) | 0, 0, 7)];
+      const txt = document.createElement('span');
+      const st = document.createElement('strong'); st.textContent = `Sala de ${String(h.presence.n || 'alguien').slice(0, 12)}`;
+      const sm = document.createElement('small'); sm.textContent = `${count} ${count === 1 ? 'jugador' : 'jugadores'} · ${PH[g.ph] || 'abierta'} · código ${String(s).toUpperCase()}`;
+      txt.append(st, sm); left.append(dot, txt);
+      const go = document.createElement('span'); go.className = 'go'; go.textContent = 'Unirme';
+      b.append(left, go);
+      b.addEventListener('click', () => joinSala(s));
+      el.appendChild(b);
+    }
+  }
+  setInterval(() => { if (mode === 'menu') { renderNet(); renderLobby(); } }, 1500);
+
+  // ---------- Invitar: código, enlace y QR ----------
+  function shareUrl(code) { return SHARE_URL + '#sala-' + code; }
+  function openShare() {
+    if (!session || !session.multi) return;
+    const code = session.sala, url = shareUrl(code);
+    $('#shareCode').textContent = code.toUpperCase();
+    $('#shareLink').textContent = url;
+    const qrBox = $('#qr');
+    qrBox.textContent = '';
+    if (typeof window.qrcode === 'function') {
+      try {
+        const qr = window.qrcode(0, 'M');
+        qr.addData(url); qr.make();
+        qrBox.innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+      } catch (e) { qrBox.textContent = 'QR no disponible'; }
+    } else qrBox.textContent = 'QR no disponible';
+    $('#share').hidden = false;
+  }
+  function closeShare() { $('#share').hidden = true; try { canvas.focus({ preventScroll: true }); } catch (e) { /* sin foco */ } }
+  async function copyText(text, btn, src) {
+    const label = btn.textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = '¡Copiado!'; }
+    catch (e) {
+      const r = document.createRange(); r.selectNodeContents(src);
+      const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      btn.textContent = 'Seleccionado: cópialo';
+    }
+    setTimeout(() => { btn.textContent = label; }, 1800);
+  }
+  $('#btnInvite').addEventListener('click', openShare);
+  $('#btnShareClose').addEventListener('click', closeShare);
+  $('#share').addEventListener('click', (e) => { if (e.target.id === 'share') closeShare(); });
+  $('#btnCopyCode').addEventListener('click', (e) => copyText(session ? session.sala.toUpperCase() : '', e.currentTarget, $('#shareCode')));
+  $('#btnCopyLink').addEventListener('click', (e) => copyText(session ? shareUrl(session.sala) : SHARE_URL, e.currentTarget, $('#shareLink')));
+  $('#focusHint').addEventListener('click', () => { goFullscreen(); grabKeyboard(); });
+  $('#btnFull').addEventListener('click', () => { if (isFull()) exitFullscreen(); else goFullscreen(); grabKeyboard(); });
+  const syncFullLabel = () => { $('#btnFull').textContent = isFull() ? 'Salir de pantalla completa' : 'Pantalla completa'; };
+  document.addEventListener('fullscreenchange', () => { syncFullLabel(); grabKeyboard(); });
+  document.addEventListener('webkitfullscreenchange', syncFullLabel);
+  $('#btnPad').addEventListener('click', (e) => {
+    onScreenPad = !onScreenPad;
+    e.currentTarget.setAttribute('aria-pressed', String(onScreenPad));
+    touchEl.hidden = !(isTouch || onScreenPad);
+    $('#joyHint').textContent = onScreenPad && !isTouch ? 'Haz clic y arrastra aquí para moverte' : 'Toca aquí para moverte';
+    grabKeyboard();
+  });
+  // Diagnóstico mínimo en la presencia (sin datos personales): ayuda a saber si el teclado llega a la página.
+  let lastDbg = '';
+  setInterval(() => {
+    if (!room) return;
+    const dbg = { f: document.hasFocus() ? 1 : 0, kd: keyCount, tc: isTouch ? 1 : 0, fs: isFull() ? 1 : 0, pad: onScreenPad ? 1 : 0, m: mode === 'game' ? 1 : 0 };
+    const sig = JSON.stringify(dbg);
+    if (sig !== lastDbg) { lastDbg = sig; room.presence({ dbg }).catch(() => {}); }
+  }, 2000);
+
+  const inCode = $('#inCode'), btnJoinCode = $('#btnJoinCode');
+  const canJoinCode = () => { btnJoinCode.disabled = !(room && myPeer && cleanCode(inCode.value).length >= 4); };
+  inCode.addEventListener('input', canJoinCode);
+  inCode.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !btnJoinCode.disabled) btnJoinCode.click(); });
+  btnJoinCode.addEventListener('click', () => joinSala(inCode.value));
+  setInterval(canJoinCode, 1000);
+
+  // Enlace de invitación (#sala-CODIGO): rellena el código y entra en cuanto haya conexión.
+  let pendingCode = '';
+  { const m = /^#sala-([a-z0-9]{4,8})$/i.exec(location.hash || ''); if (m) { pendingCode = cleanCode(m[1]); inCode.value = pendingCode.toUpperCase(); } }
+  setInterval(() => {
+    if (pendingCode && mode === 'menu' && room && myPeer) { const c = pendingCode; pendingCode = ''; joinSala(c); }
+  }, 500);
+
+  // Herramienta de depuración (solo lectura) para pruebas.
+  window.__tagverse = { state: () => ({ mode, iAmHost, myId: myId(), G, me: Object.assign({}, me.body), hostPeerId, sala: session && session.sala, isTouch, station: STATION.ready, runner: RUNNER.ready, view: viewMode, area: (areaAt(me.body.x, me.body.z) >= 0 ? AREAS[areaAt(me.body.x, me.body.z)].name : '') }) };
+
+  // Redibuja las etiquetas cuando termine de cargar la tipografía.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { for (const av of avatars.values()) av.label.key = ''; });
+
+  loadStation();
+  setView(viewMode);
+  boot.remove();
+  requestAnimationFrame(frame);
+  connectRoom();
+})();
+</script>
+</body>
+</html>
