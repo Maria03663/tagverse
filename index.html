@@ -355,6 +355,30 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 #roomName { margin-top: 5px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8); }
 @media (max-width: 520px) { #lobbyPanel { width: calc(100% - 24px); top: auto; bottom: calc(150px + var(--safe-b)); max-height: 46%; } }
 
+/* ---------- Modos, niveles y resultados ---------- */
+#roster .badge.ice { background: #bff4ff; color: #062a3a; }
+.lp-mode { margin: 0; font-size: 13px; line-height: 1.4; color: var(--ink); background: rgba(53, 224, 255, 0.1); border: 1px solid rgba(53, 224, 255, 0.3); border-radius: 10px; padding: 7px 9px; }
+.lp-mode b { color: var(--run); }
+#lpHost { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+#lpHost .wide { grid-column: 1 / -1; }
+.lvtag { font-size: 11px; color: var(--gold); font-weight: 700; flex: none; }
+.lvl-card { background: rgba(255, 210, 61, 0.08); border: 1px solid rgba(255, 210, 61, 0.35); border-radius: 12px; padding: 9px 11px; display: flex; flex-direction: column; gap: 6px; }
+.lv-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.lv-num { font-family: var(--display); font-weight: 400; font-size: 17px; color: var(--gold); }
+.lv-xp { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lv-bar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.lv-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold), #ff8a2b); border-radius: 99px; transition: width 0.6s ease; }
+.lv-next { font-size: 12px; color: var(--muted); }
+.swatch.locked, .chip.locked { opacity: 0.38; }
+.swatch.locked { position: relative; }
+.swatch.locked::after { content: ''; position: absolute; inset: 9px; border-radius: 3px; border: 2px solid rgba(0, 0, 0, 0.55); border-top-width: 5px; }
+.swatch.rainbow { background: conic-gradient(#ff4d4d, #ffd23d, #6dff7a, #35e0ff, #b48cff, #ff6ec7, #ff4d4d); }
+#resTable li.win { background: rgba(255, 210, 61, 0.14); }
+#resTable li.win .nm { color: var(--gold); }
+.res-xp { background: rgba(255, 210, 61, 0.08); border: 1px solid rgba(255, 210, 61, 0.35); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; text-align: left; }
+.xp-head { font-weight: 700; color: var(--gold); }
+.xp-det { font-size: 12.5px; color: var(--muted); }
+
 #boot {
   position: absolute; inset: 0; z-index: 30; display: grid; place-items: center;
   background: var(--void); font-family: var(--display); font-size: 20px; color: var(--muted);
@@ -401,6 +425,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         <div class="hud-right">
           <button id="btnView" class="chip-btn" type="button" aria-pressed="false">Vista: 3ª persona</button>
           <button id="btnMute" class="chip-btn" type="button" aria-pressed="false">Sonido: sí</button>
+          <button id="btnMusic" class="chip-btn" type="button" aria-pressed="false">Música: sí</button>
           <button id="btnFull" class="chip-btn" type="button" hidden>Pantalla completa</button>
           <button id="btnPad" class="chip-btn" type="button" aria-pressed="false" hidden>Controles en pantalla</button>
         </div>
@@ -418,6 +443,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         <h2 id="resTitle">¡Fin del juego!</h2>
         <p id="resSub"></p>
         <ol id="resTable" aria-label="Resultados"></ol>
+        <div id="resXp" class="res-xp" hidden></div>
         <div id="resHost" class="res-actions">
           <button id="btnAgain" class="cta alt" type="button">Otra ronda</button>
           <button id="btnReset" class="cta alt" type="button">Volver a la sala</button>
@@ -446,9 +472,12 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       </div>
       <div id="lpBody">
         <ol id="lpList" aria-label="Jugadores en la sala"></ol>
+        <p id="lpModeInfo" class="lp-mode"></p>
         <div id="lpHost">
+          <div class="field wide"><span class="lbl">Modo de juego</span><div id="lpMode" class="chips" role="group" aria-label="Modo de juego"></div></div>
           <div class="field"><span class="lbl">Bots</span><div id="lpBots" class="chips" role="group" aria-label="Bots"></div></div>
-          <div class="field"><span class="lbl">Duración de ronda</span><div id="lpLen" class="chips" role="group" aria-label="Duración de ronda"></div></div>
+          <div class="field"><span class="lbl">Dificultad</span><div id="lpDiff" class="chips" role="group" aria-label="Dificultad de los bots"></div></div>
+          <div class="field wide"><span class="lbl">Duración de ronda</span><div id="lpLen" class="chips" role="group" aria-label="Duración de ronda"></div></div>
         </div>
         <p id="lpHint" class="lp-hint"></p>
         <div class="lp-actions">
@@ -596,11 +625,31 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     { text: 'invirtió la gravedad en el Laboratorio', dur: 20000, cd: 35000 },
     { text: 'provocó un apagón: solo ves lo que tienes cerca', dur: 16000, cd: 50000 },
   ];
-  const COLORS = ['#35e0ff', '#ffd23d', '#6dff7a', '#ff8a5c', '#b48cff', '#ff6ec7', '#4dffd2', '#f2efff'];
-  const HATS = ['Nada', 'Gorra', 'Corona', 'Cuernos', 'Antena', 'Cresta', 'Halo'];
+  const COLORS = ['#35e0ff', '#ffd23d', '#6dff7a', '#ff8a5c', '#b48cff', '#ff6ec7', '#4dffd2', '#f2efff', '#ff4d2e', '#ffb800', '#b6ff3d', '#ff3d9a'];
+  const HATS = ['Nada', 'Gorra', 'Corona', 'Cuernos', 'Antena', 'Cresta', 'Halo', 'Orejas', 'Copa', 'Vikingo', 'Hélice'];
   const CAPES = ['Capa', 'Bufanda', 'Nada', 'Alas', 'Propulsor'];
   const BOT_NAMES = ['Voltio', 'Píxel', 'Neón', 'Glitch'];
   const IT_HEX = 0xff3d9a;
+  // Modos de juego
+  const MODES = [
+    { id: 'cl', name: 'Clásico', desc: 'Una persona la lleva. Quien la tenga cuando acabe el tiempo pierde.' },
+    { id: 'in', name: 'Infección', desc: 'A quien tocan también caza. Ganan los que sobrevivan hasta el final.' },
+    { id: 'eq', name: 'Equipos', desc: 'Rojo contra Azul: un equipo caza y el otro huye. Cada ronda cambian los papeles.' },
+    { id: 'co', name: 'Congelados', desc: 'Tocar congela. Un compañero libre te descongela al tocarte. Ganan si nadie queda libre… o si aguantan.' },
+  ];
+  const TEAM_COLORS = ['#ff5a6e', '#4da3ff'], TEAM_NAMES = ['Rojo', 'Azul'];
+  // Dificultad de los bots: velocidad, tiempo de reacción, uso del dash, saltos y cuánto anticipan tu movimiento
+  const DIFFS = [
+    { name: 'Fácil', speed: 0.78, react: 900, dash: 0.25, jump: 0.5, predict: 0 },
+    { name: 'Normal', speed: 0.9, react: 450, dash: 0.6, jump: 0.8, predict: 0.25 },
+    { name: 'Difícil', speed: 1.0, react: 150, dash: 1, jump: 1, predict: 0.55 },
+  ];
+  // Progresión: nivel en que se desbloquea cada color (c), gorro (h) y estela (tr)
+  const UNLOCK = { c: { 8: 2, 9: 4, 10: 6, 11: 10 }, h: { 7: 3, 8: 5, 9: 7, 10: 9 }, tr: { 1: 2, 2: 4, 3: 6, 4: 8 } };
+  const RAINBOW = 11;
+  const TRAILS = ['Normal', 'Fuego', 'Hielo', 'Oro', 'Arcoíris'];
+  const needXp = (lv) => 80 + 40 * (lv - 1);
+  function levelOf(xp) { let lv = 1, rest = xp; while (rest >= needXp(lv) && lv < 99) { rest -= needXp(lv); lv++; } return { lv, rest, need: needXp(lv) }; }
 
   // ================================================================
   // Mapa (datos compartidos por la física y el render)
@@ -1194,7 +1243,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     mats.push(trailMat);
     const trail = new T.Mesh(tGeo, trailMat);
     trail.frustumCulled = false; trail.visible = false;
-    return { glb: true, root, model, mixer, acts, cur: 'Idle', capeBone, wingBones, flames,
+    const hat = addExtraHat(glb.getObjectByName('Head'), lk.h, 0.58, 0.29, color, mats);
+    return { glb: true, root, model, mixer, acts, cur: 'Idle', capeBone, wingBones, flames, hat, rainbow: lk.c === RAINBOW,
       bodyMat: cache.Accent || new T.MeshStandardMaterial(), trimMat: cache.Trim || new T.MeshStandardMaterial(),
       visorMat: cache.Visor || new T.MeshStandardMaterial(), mats, color, trimColor, visorColor: (cache.Visor ? cache.Visor.emissive.clone() : new T.Color()),
       aura, shield, shadow, label, trail, trailPts: [], trailT: 0,
@@ -1356,7 +1406,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const trail = new T.Mesh(tGeo, trailMat);
     trail.frustumCulled = false; trail.visible = false;
 
-    return { root, model, rig, bodyMat, suitMat, trimMat, visorMat, mats, color, trimColor: trimMat.color.clone(), visorColor: visorMat.emissive.clone(),
+    const hat = addExtraHat(head, lk.h, 0.25, 0.25, color, mats);
+    return { root, model, rig, bodyMat, suitMat, trimMat, visorMat, mats, color, trimColor: trimMat.color.clone(), visorColor: visorMat.emissive.clone(), hat, rainbow: lk.c === RAINBOW,
       legs, arms, head, torso, eyes, halo, cape, wings, flames, aura, shield, shadow, label, trail, trailPts: [], trailT: 0,
       scale: 1, speed: 0, run: 0, air: 0, px: 0, pz: 0, dx: 0, dy: 0, dz: 0, dry: 0, fresh: true, phase: Math.random() * 6, key: '' };
   }
@@ -1381,7 +1432,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   const IT_COLOR = new T.Color(IT_HEX);
   const TMP_COLOR = new T.Color();
-  function updateTrail(av, strength, col, dt) {
+  function updateTrail(av, strength, col, dt, style, t) {
     const pts = av.trailPts;
     av.trailT -= dt;
     if (av.trailT <= 0 || pts.length === 0) {
@@ -1400,8 +1451,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       const f = i < pts.length ? Math.pow(1 - i / (TRAIL_N - 1), 1.6) * strength * 0.8 : 0;
       pos.setXYZ(i * 2, p.x, p.y + lo + (hi - lo) * 0.25 * (i / TRAIL_N), p.z);
       pos.setXYZ(i * 2 + 1, p.x, p.y + hi - (hi - lo) * 0.25 * (i / TRAIL_N), p.z);
-      cl.setXYZ(i * 2, col.r * f, col.g * f, col.b * f);
-      cl.setXYZ(i * 2 + 1, col.r * f, col.g * f, col.b * f);
+      const cc = style ? trailColor(style, i, TRAIL_N, col, t) : col;
+      cl.setXYZ(i * 2, cc.r * f, cc.g * f, cc.b * f);
+      cl.setXYZ(i * 2 + 1, cc.r * f, cc.g * f, cc.b * f);
     }
     pos.needsUpdate = true; cl.needsUpdate = true;
   }
@@ -1430,19 +1482,20 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     }
     av.aura.visible = o.it; av.aura.rotation.z += dt * 2;
     av.shield.visible = o.shield > 0; av.shield.rotation.z += dt * 3;
+    avatarExtras(av, o, t, dt);
 
     // Animación: correr, saltar, dash y reposo
     const f = floorAt(av.dx, av.dz, av.dy + 0.05);
     const inAir = av.dy - f > 0.15;
     av.air = lerp(av.air, inAir ? 1 : 0, 1 - Math.exp(-12 * dt));
     const dash = clamp((av.speed - 11) / 6, 0, 1);
-    if (av.glb) animateGlb(av, o, t, dt, inAir, dash);
-    else animateProc(av, o, t, dt, dash);
+    if (!o.frozen) { if (av.glb) animateGlb(av, o, t, dt, inAir, dash); else animateProc(av, o, t, dt, dash); }
 
-    // Estela al correr rápido (orbe de velocidad, dash o mutación)
-    const tStrength = Math.max(clamp((av.speed - 7) / 6, 0, 1), o.it && av.speed > 2 ? 0.3 : 0);
+    // Estela al correr rápido (orbe de velocidad, dash o mutación); las estelas especiales se ven siempre al correr
+    const style = o.it ? 0 : (o.tr | 0);
+    const tStrength = o.frozen ? 0 : Math.max(clamp((av.speed - 7) / 6, 0, 1), o.it && av.speed > 2 ? 0.3 : 0, style && av.speed > 3 ? 0.45 : 0);
     TMP_COLOR.copy(o.it ? IT_COLOR : av.trimColor);
-    updateTrail(av, tStrength, TMP_COLOR, dt);
+    updateTrail(av, tStrength, TMP_COLOR, dt, style, t);
 
     av.shadow.position.set(av.dx, f + 0.03, av.dz);
     av.shadow.scale.setScalar(clamp(1 - (av.dy - f) * 0.08, 0.4, 1) * av.scale);
@@ -1525,44 +1578,119 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   // ================================================================
   // Sonido sintetizado (Web Audio)
   // ================================================================
+  // Sonido y música generados en el momento (Web Audio): no hace falta descargar archivos
   const SND = {
-    ctx: null, out: null, humGain: null, muted: false, nextBeat: 0,
+    ctx: null, out: null, sfx: null, mus: null, humGain: null, muted: false, musicOn: load('tagverse.music') !== false, nextBeat: 0,
+    noise: null, seq: null, style: '', step: 0, nextT: 0, timer: 0,
     init() {
       if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {}); return; }
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
       try { this.ctx = new AC(); } catch (e) { return; }
       const c = this.ctx;
-      this.out = c.createGain(); this.out.gain.value = this.muted ? 0 : 0.9; this.out.connect(c.destination);
+      this.out = c.createGain(); this.out.gain.value = this.muted ? 0 : 0.9;
+      const comp = c.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 4;
+      this.out.connect(comp); comp.connect(c.destination);
+      this.sfx = c.createGain(); this.sfx.gain.value = 1; this.sfx.connect(this.out);
+      this.mus = c.createGain(); this.mus.gain.value = this.musicOn ? 0.32 : 0; this.mus.connect(this.out);
+      // ruido blanco reutilizable (platillos, caja, viento, hielo)
+      const len = c.sampleRate;
+      this.noise = c.createBuffer(1, len, c.sampleRate);
+      const d = this.noise.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       const o = c.createOscillator(); o.type = 'sawtooth'; o.frequency.value = 70;
       const lfo = c.createOscillator(); lfo.frequency.value = 3;
       const lg = c.createGain(); lg.gain.value = 18; lfo.connect(lg); lg.connect(o.frequency);
       const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 300;
       const g = c.createGain(); g.gain.value = 0;
-      o.connect(f); f.connect(g); g.connect(this.out); o.start(); lfo.start();
+      o.connect(f); f.connect(g); g.connect(this.sfx); o.start(); lfo.start();
       this.humGain = g;
+      this.timer = setInterval(() => this.schedule(), 40);
     },
-    tone(f0, f1, dur, type, vol, delay) {
+    tone(f0, f1, dur, type, vol, delay, dest) {
       const c = this.ctx; if (!c || this.muted) return;
       const t0 = c.currentTime + (delay || 0);
-      const o = c.createOscillator(); o.type = type || 'sine';
-      o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
-      const g = c.createGain();
-      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-      o.connect(g); g.connect(this.out); o.start(t0); o.stop(t0 + dur + 0.05);
+      this.toneAt(t0, f0, f1, dur, type, vol, dest || this.sfx);
     },
-    pickup(v) { this.tone(600, 1500, 0.22, 'sine', 0.22 * v); this.tone(900, 2000, 0.18, 'triangle', 0.1 * v, 0.05); },
-    tag() { this.tone(240, 50, 0.4, 'sawtooth', 0.22); this.tone(120, 40, 0.5, 'square', 0.1); },
+    toneAt(t0, f0, f1, dur, type, vol, dest, attack) {
+      const c = this.ctx;
+      const o = c.createOscillator(); o.type = type || 'sine';
+      o.frequency.setValueAtTime(f0, t0); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + dur);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, vol), t0 + (attack || 0.012));
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(dest); o.start(t0); o.stop(t0 + dur + 0.05);
+    },
+    noiseAt(t0, dur, vol, type, freq, q, dest) {
+      const c = this.ctx;
+      const s = c.createBufferSource(); s.buffer = this.noise; s.playbackRate.value = 1;
+      const f = c.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q || 1;
+      const g = c.createGain();
+      g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      s.connect(f); f.connect(g); g.connect(dest || this.sfx);
+      s.start(t0, Math.random() * 0.5); s.stop(t0 + dur + 0.02);
+    },
+    noise1(dur, vol, type, freq, q, delay) { const c = this.ctx; if (!c || this.muted) return; this.noiseAt(c.currentTime + (delay || 0), dur, vol, type, freq, q); },
+    pickup(v, k) {
+      const base = [600, 520, 700, 440, 500, 380][k | 0] || 600;
+      this.tone(base, base * 2.5, 0.22, 'sine', 0.22 * v); this.tone(base * 1.5, base * 3.3, 0.18, 'triangle', 0.1 * v, 0.05);
+      if (v > 0.5) this.tone(base * 2, base * 2, 0.25, 'sine', 0.06, 0.12);
+    },
+    tag() { this.tone(240, 50, 0.4, 'sawtooth', 0.22); this.tone(120, 40, 0.5, 'square', 0.1); this.noise1(0.25, 0.25, 'bandpass', 1800, 2); },
+    infect() { this.tone(200, 60, 0.5, 'sawtooth', 0.2); this.tone(203, 58, 0.5, 'sawtooth', 0.14); this.noise1(0.35, 0.18, 'lowpass', 900, 1); },
+    freeze() { this.noise1(0.5, 0.35, 'highpass', 5000, 0.7); [1800, 2400, 3100].forEach((f, i) => this.tone(f, f * 1.02, 0.35, 'sine', 0.07, i * 0.05)); this.tone(300, 120, 0.3, 'square', 0.06); },
+    unfreeze() { [660, 880, 1100, 1320].forEach((f, i) => this.tone(f, f, 0.18, 'triangle', 0.1, i * 0.06)); this.noise1(0.2, 0.12, 'highpass', 6000, 0.7); },
     block() { this.tone(900, 1400, 0.25, 'triangle', 0.18); this.tone(1350, 1800, 0.25, 'sine', 0.12, 0.04); },
-    end() { [660, 550, 440].forEach((f, i) => this.tone(f, f * 0.98, 0.28, 'square', 0.1, i * 0.22)); },
+    end() { [660, 550, 440].forEach((f, i) => this.tone(f, f * 0.98, 0.28, 'square', 0.08, i * 0.22)); },
+    win() { [523, 659, 784, 1047].forEach((f, i) => { this.tone(f, f, 0.22, 'square', 0.08, 0.75 + i * 0.12); this.tone(f / 2, f / 2, 0.22, 'triangle', 0.08, 0.75 + i * 0.12); }); this.tone(1047, 1047, 0.6, 'triangle', 0.09, 1.25); },
+    lose() { [392, 370, 349, 262].forEach((f, i) => this.tone(f, f * 0.97, 0.3, 'triangle', 0.1, 0.75 + i * 0.22)); },
+    levelUp() { [523, 659, 784, 1047, 1319].forEach((f, i) => this.tone(f, f, 0.16, 'square', 0.07, i * 0.07)); this.tone(1568, 1568, 0.7, 'triangle', 0.09, 0.4); this.noise1(0.6, 0.06, 'highpass', 7000, 0.5, 0.35); },
     beep(f) { this.tone(f, f, 0.12, 'square', 0.08); },
-    whoosh() { this.tone(180, 900, 0.6, 'sawtooth', 0.07); },
+    whoosh() { this.tone(180, 900, 0.6, 'sawtooth', 0.05); this.noise1(0.6, 0.15, 'bandpass', 1200, 0.8); },
     jump() { this.tone(300, 620, 0.12, 'triangle', 0.06); },
+    land(v) { this.tone(140, 60, 0.12, 'sine', 0.18 * v); this.noise1(0.08, 0.08 * v, 'lowpass', 700, 1); },
+    dash() { this.noise1(0.3, 0.22, 'bandpass', 2500, 0.9); this.tone(500, 1400, 0.18, 'sawtooth', 0.04); },
     thump(v) { this.tone(72, 40, 0.18, 'sine', 0.45 * v); this.tone(62, 38, 0.16, 'sine', 0.3 * v, 0.24); },
     setHum(level) { if (this.humGain) this.humGain.gain.setTargetAtTime(this.muted ? 0 : level, this.ctx.currentTime, 0.12); },
     setMuted(m) { this.muted = m; if (this.out) this.out.gain.value = m ? 0 : 0.9; if (m) this.setHum(0); },
+    setMusicOn(on) { this.musicOn = on; save('tagverse.music', on); if (this.mus) this.mus.gain.setTargetAtTime(on ? 0.32 : 0, this.ctx.currentTime, 0.3); },
+
+    // ---------------- Música: synthwave en La menor (Am - F - C - G) ----------------
+    // style: 'menu' (tranquila), 'lobby', 'game' (con batería), 'tense' (últimos 30 s, más rápida), 'off'
+    setStyle(st) { if (st !== this.style) { this.style = st; if (this.ctx && st !== 'off' && this.nextT < this.ctx.currentTime) { this.nextT = this.ctx.currentTime + 0.1; this.step = 0; } } },
+    schedule() {
+      const c = this.ctx; if (!c || this.muted || !this.musicOn || this.style === 'off' || !this.style) return;
+      const bpm = { menu: 96, lobby: 104, game: 118, tense: 134 }[this.style] || 110;
+      const stepDur = 60 / bpm / 4;                 // semicorcheas
+      if (this.nextT < c.currentTime - 0.2) this.nextT = c.currentTime + 0.05;
+      while (this.nextT < c.currentTime + 0.25) { this.playStep(this.step, this.nextT, stepDur); this.nextT += stepDur; this.step = (this.step + 1) % 256; }
+    },
+    playStep(i, t, sd) {
+      const st = this.style, bar = Math.floor(i / 16) % 4, s = i % 16, D = this.mus;
+      const CH = [[57, 60, 64], [53, 57, 60], [48, 52, 55], [55, 59, 62]];   // Am F C G (MIDI)
+      const ROOT = [45, 41, 48, 43];
+      const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+      const ch = CH[bar];
+      // Pad (todas): acorde largo al empezar cada compás
+      if (s === 0) for (const m of ch) { this.toneAt(t, hz(m), hz(m), sd * 16, 'sawtooth', st === 'menu' ? 0.018 : 0.022, D, 0.4); this.toneAt(t, hz(m) * 1.005, hz(m) * 1.005, sd * 16, 'triangle', 0.02, D, 0.4); }
+      // Arpegio
+      const arpEvery = st === 'menu' ? 4 : st === 'lobby' ? 2 : 1;
+      if (s % arpEvery === 0) {
+        const n = ch[(s / arpEvery) % 3 | 0] + 12 + ((s % 8 === 6 && st !== 'menu') ? 12 : 0);
+        this.toneAt(t, hz(n), hz(n), sd * 1.6, 'square', st === 'tense' ? 0.03 : 0.022, D);
+      }
+      if (st === 'menu') return;
+      // Bajo
+      if (s % 4 === 0 || (st !== 'lobby' && s % 4 === 3)) this.toneAt(t, hz(ROOT[bar]), hz(ROOT[bar]), sd * 2.2, 'sawtooth', 0.07, D);
+      if (st === 'lobby') { if (s % 8 === 4) this.noiseAt(t, 0.05, 0.05, 'highpass', 8000, 0.7, D); return; }
+      // Batería
+      if (s % 4 === 0) { this.toneAt(t, 150, 40, 0.22, 'sine', 0.5, D, 0.003); }
+      if (s === 4 || s === 12) this.noiseAt(t, 0.16, 0.28, 'bandpass', 1800, 0.8, D);
+      if (s % 2 === 0) this.noiseAt(t, 0.04, st === 'tense' ? 0.09 : 0.06, 'highpass', 8000, 0.7, D);
+      if (st === 'tense' && s % 2 === 1) this.noiseAt(t, 0.03, 0.04, 'highpass', 9000, 0.7, D);
+    },
   };
+  // El navegador solo deja sonar después de tocar algo: arrancar el audio al primer toque
+  window.addEventListener('pointerdown', () => { SND.init(); }, { once: true });
 
   // ================================================================
   // Estado local
@@ -1571,8 +1699,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   const look = {
     name: typeof saved.name === 'string' && saved.name.trim() ? saved.name.trim().slice(0, 12) : 'Jugador' + Math.floor(10 + Math.random() * 90),
     c: clamp(saved.c | 0, 0, COLORS.length - 1), h: clamp(saved.h | 0, 0, HATS.length - 1), k: clamp(saved.k | 0, 0, CAPES.length - 1),
+    tr: clamp(saved.tr | 0, 0, TRAILS.length - 1),
   };
-  const opts = { bots: clamp(num((load('tagverse.opts') || {}).bots, 2), 0, 3), len: clamp(num((load('tagverse.opts') || {}).len, 180000), 120000, 300000) };
+  const savedOpts = load('tagverse.opts') || {};
+  const opts = { bots: clamp(num(savedOpts.bots, 2), 0, 3), len: clamp(num(savedOpts.len, 180000), 120000, 300000),
+    mode: MODES.some((m) => m.id === savedOpts.mode) ? savedOpts.mode : 'cl', diff: clamp(num(savedOpts.diff, 1) | 0, 0, 2) };
   const me = { body: newBody(LOBBY_C.x, 0.6, LOBBY_C.z) };
   let viewMode = load('tagverse.view') === 'fp' ? 'fp' : 'tp', menuTab = 'play';
   let mode = 'menu';
@@ -1596,47 +1727,56 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   // ================================================================
   function newBot(i) {
     const sp = LOBBY_SPAWNS[(i + 2) % LOBBY_SPAWNS.length];
-    return { id: 'bot' + i, ni: i, c: (i * 3 + 2) % COLORS.length, h: (i + 1) % HATS.length, k: i % CAPES.length,
+    return { id: 'bot' + i, ni: i, c: (i * 3 + 2) % COLORS.length, h: (i * 3 + 1) % HATS.length, k: i % CAPES.length, tr: (i + 1) % TRAILS.length,
       body: newBody(sp.x, 0, sp.z), wx: 0, wz: 0, stuck: 0, wander: Math.random() * 6.28, phase: Math.random() * 6, nextDash: 0 };
   }
   function newHostState(botCount, roundMs, t) {
     const s = { ph: 'w', phEnd: t, it: '', r: 0, los: '', roundMs, hn: look.name, orbs: [], orbSeq: 0, fx: [], sh: new Map(),
-      tp: [], tpSeq: 0, mu: 0, mutUntil: [0, 0, 0, 0], mutCd: [0, 0, 0, 0], lost: new Map(), ev: [], evSeq: 0,
-      immune: '', immuneEnd: 0, nextTag: 0, nextOrb: 0, nextDir: 0, lastTagTime: t, bots: [] };
+      tp: [], tpSeq: 0, mu: 0, mutUntil: [0, 0, 0, 0], mutCd: [0, 0, 0, 0], pts: new Map(), ev: [], evSeq: 0,
+      imm: new Map(), tagCd: new Map(), nextOrb: 0, nextDir: 0, lastTagTime: t, bots: [],
+      md: opts.mode, df: opts.diff, hz: new Set(), fz: new Map(), tm: new Map(), ht: 0, ts: [0, 0], win: [], wr: '', first: '' };
     for (let i = 0; i < botCount; i++) s.bots.push(newBot(i));
     return s;
   }
   function toWire(s, t) {
-    const w = {
+    const imm = []; for (const [id, until] of s.imm) if (until > t) imm.push([id, Math.round(until - t)]);
+    return {
       ph: s.ph, rem: Math.max(0, Math.round(s.phEnd - t)), it: s.it, r: s.r, los: s.los, hn: s.hn.slice(0, 12), rm: s.roundMs,
+      md: s.md, df: s.df, hz: [...s.hz], fz: [...s.fz], tm: [...s.tm], ht: s.ht, ts: s.ts, wn: s.win, wr: s.wr,
       o: s.orbs.map((o) => [o.id, o.k, r2(o.x), r2(o.y), r2(o.z)]),
       f: s.fx.map((f) => [f.id, f.k, Math.max(0, Math.round(f.end - t))]),
       sh: [...s.sh].filter((e) => e[1] > 0),
       tp: s.tp.map((x) => [x.seq, x.id, r2(x.x), r2(x.y), r2(x.z)]),
-      mu: s.mu, l: [...s.lost].slice(-12), im: t < s.immuneEnd ? s.immune : '',
-      b: s.bots.map((b) => [b.id, r2(b.body.x), r2(b.body.y), r2(b.body.z), r2(b.body.ry), b.c, b.h, b.k, b.ni]),
+      mu: s.mu, pt: [...s.pts].slice(-12), im: imm,
+      b: s.bots.map((b) => [b.id, r2(b.body.x), r2(b.body.y), r2(b.body.z), r2(b.body.ry), b.c, b.h, b.k, b.ni, b.tr]),
       ev: s.ev.slice(-6),
     };
-    return w;
   }
   function fromWire(g, ageMs, t) {
     const s = newHostState(0, num(g.rm, 180000), t);
     s.ph = ['w', 'c', 'p', 'o', 'e'].includes(g.ph) ? g.ph : 'w';
     s.phEnd = t + num(g.rem) - ageMs;
     s.it = typeof g.it === 'string' ? g.it : ''; s.r = num(g.r); s.los = typeof g.los === 'string' ? g.los : '';
+    s.md = MODES.some((m) => m.id === g.md) ? g.md : 'cl';
+    s.df = clamp(num(g.df, 1) | 0, 0, 2);
+    s.hz = new Set((g.hz || []).map(String));
+    s.fz = new Map((g.fz || []).map((e) => [String(e[0]), num(e[1])]));
+    s.tm = new Map((g.tm || []).map((e) => [String(e[0]), num(e[1]) ? 1 : 0]));
+    s.ht = num(g.ht) ? 1 : 0; s.ts = Array.isArray(g.ts) ? [num(g.ts[0]), num(g.ts[1])] : [0, 0];
+    s.win = Array.isArray(g.wn) ? g.wn.map(String) : []; s.wr = typeof g.wr === 'string' ? g.wr : '';
     s.orbs = (g.o || []).map((o) => ({ id: num(o[0]), k: clamp(num(o[1]) | 0, 0, PU.length - 1), x: num(o[2]), y: num(o[3]), z: num(o[4]) }));
     s.orbSeq = s.orbs.reduce((m, o) => Math.max(m, o.id), 0) + 100;
     s.fx = (g.f || []).map((f) => ({ id: String(f[0]), k: clamp(num(f[1]) | 0, 0, PU.length - 1), end: t + num(f[2]) - ageMs }));
     s.sh = new Map((g.sh || []).map((e) => [String(e[0]), num(e[1])]));
     s.mu = num(g.mu) & 15;
     for (let i = 0; i < 4; i++) if (s.mu & (1 << i)) { s.mutUntil[i] = t + 10000; s.mutCd[i] = t + 30000; }
-    s.lost = new Map((g.l || []).map((e) => [String(e[0]), num(e[1])]));
+    s.pts = new Map((g.pt || []).map((e) => [String(e[0]), num(e[1])]));
+    s.imm = new Map((g.im || []).map((e) => [String(e[0]), t + num(e[1])]));
     s.ev = (g.ev || []).slice(-6);
     s.evSeq = s.ev.reduce((m, e) => Math.max(m, num(e[0])), 0);
     s.tpSeq = (g.tp || []).reduce((m, x) => Math.max(m, num(x[0])), lastTp);
-    s.bots = (g.b || []).slice(0, 3).map((a) => { const b = newBot(num(a[8]) | 0); b.id = String(a[0]); b.c = num(a[5]) | 0; b.h = num(a[6]) | 0; b.k = num(a[7]) | 0; Object.assign(b.body, { x: num(a[1]), y: num(a[2]), z: num(a[3]), ry: num(a[4]) }); return b; });
-    s.immune = typeof g.im === 'string' ? g.im : ''; s.immuneEnd = s.immune ? t + 1500 : 0;
-    s.nextTag = t; s.nextOrb = t + 3000; s.nextDir = t + 5000; s.lastTagTime = t;
+    s.bots = (g.b || []).slice(0, 3).map((a) => { const b = newBot(num(a[8]) | 0); b.id = String(a[0]); b.c = num(a[5]) | 0; b.h = num(a[6]) | 0; b.k = num(a[7]) | 0; b.tr = num(a[9]) | 0; Object.assign(b.body, { x: num(a[1]), y: num(a[2]), z: num(a[3]), ry: num(a[4]) }); return b; });
+    s.nextOrb = t + 3000; s.nextDir = t + 5000; s.lastTagTime = t;
     return s;
   }
   function hostEvent(type, a, b) {
@@ -1665,6 +1805,60 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   function clearRoundStuff() {
     S.fx = []; S.sh.clear(); S.orbs = []; S.mu = 0; S.mutUntil = [0, 0, 0, 0];
+    S.hz.clear(); S.fz.clear(); S.imm.clear(); S.tagCd.clear(); S.it = '';
+  }
+  const addPts = (id, n) => { S.pts.set(id, (S.pts.get(id) || 0) + n); };
+
+  // Equipos: repartir a quien no tenga equipo en el que tenga menos gente
+  function balanceTeams(ents) {
+    const ids = new Set(ents.map((e) => e.id));
+    for (const id of [...S.tm.keys()]) if (!ids.has(id)) S.tm.delete(id);
+    const cnt = [0, 0]; for (const v of S.tm.values()) cnt[v]++;
+    for (const e of ents.slice().sort(() => Math.random() - 0.5)) {
+      if (S.tm.has(e.id)) continue;
+      const tmI = cnt[0] <= cnt[1] ? 0 : 1; S.tm.set(e.id, tmI); cnt[tmI]++;
+    }
+    // si un equipo quedó vacío, pasar a alguien del otro
+    if (!cnt[0] || !cnt[1]) {
+      const big = cnt[0] ? 0 : 1, mv = [...S.tm].filter((x) => x[1] === big);
+      if (mv.length > 1) S.tm.set(pick(mv)[0], 1 - big);
+    }
+  }
+  function startRound(ents, t) {
+    S.r++; clearRoundStuff(); S.win = []; S.wr = ''; S.los = ''; S.first = ''; S.lastFree = '';
+    S.lastTagTime = t; S.nextOrb = t + 1500; S.nextDir = t + 6000;
+    const ids = ents.map((e) => e.id);
+    if (S.md === 'cl') { S.it = pick(ids); S.hz.add(S.it); }
+    else if (S.md === 'in') { const f = pick(ids); S.hz.add(f); S.first = f; }
+    else if (S.md === 'co') { const k = Math.max(1, Math.round(ids.length / 4)); for (const id of ids.slice().sort(() => Math.random() - 0.5).slice(0, k)) S.hz.add(id); }
+    else if (S.md === 'eq') { balanceTeams(ents); S.ht = (S.r + 1) % 2; for (const [id, tmI] of S.tm) if (tmI === S.ht) S.hz.add(id); }
+    for (const id of S.hz) S.tagCd.set(id, t + 1200);
+    const off = Math.floor(Math.random() * SPAWNS.length);
+    ents.forEach((e, i) => teleportEntity(e, SPAWNS[(off + i * 4) % SPAWNS.length], t));
+    setPhase('p', S.roundMs, t);
+    hostEvent(6, [...S.hz][0] || '', S.md);
+  }
+  function endRound(ents, t, reason) {
+    const ids = ents.map((e) => e.id), free = ids.filter((id) => !S.hz.has(id) && !S.fz.get(id));
+    let win = [];
+    if (S.md === 'cl') { S.los = S.it; win = ids.filter((id) => id !== S.it); win.forEach((id) => addPts(id, 1)); }
+    else if (S.md === 'in') {
+      if (reason === 'all') { win = [S.first, S.lastFree].filter((id) => id && ids.includes(id)); if (S.first) addPts(S.first, 3); if (S.lastFree) addPts(S.lastFree, 2); }
+      else { win = free; free.forEach((id) => addPts(id, 3)); }
+    } else if (S.md === 'co') {
+      if (reason === 'all') { win = [...S.hz]; win.forEach((id) => addPts(id, 3)); }
+      else { win = free; free.forEach((id) => addPts(id, 3)); }
+    } else if (S.md === 'eq') {
+      const wt = reason === 'all' ? S.ht : 1 - S.ht;
+      win = ids.filter((id) => S.tm.get(id) === wt);
+      win.forEach((id) => addPts(id, 2));
+      S.ts[wt] += 3;
+    }
+    S.win = win; S.wr = S.md + ':' + reason;
+    const los = S.los;
+    clearRoundStuff(); S.los = los;
+    setPhase('o', CFG.overTime, t);
+    hostEvent(5, los, S.wr);
   }
 
   function hostTick(t, dt) {
@@ -1677,30 +1871,28 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       for (const e of ents) if (!inLobby(e.x, e.z) && lateOk(e.id, t)) teleportEntity(e, pick(LOBBY_SPAWNS), t);
     } else if (S.ph === 'c') {
       if (n < 2) toLobby(t, ents);
-      else if (t >= S.phEnd) {
-        S.r++; S.it = pick(ents).id; S.immune = ''; S.immuneEnd = 0;
-        S.nextTag = t + 800; S.lastTagTime = t; S.nextOrb = t + 1500; S.nextDir = t + 6000;
-        const off = Math.floor(Math.random() * SPAWNS.length);
-        ents.forEach((e, i) => teleportEntity(e, SPAWNS[(off + i * 4) % SPAWNS.length], t));
-        setPhase('p', S.roundMs, t);
-        hostEvent(6, S.it);
-      }
+      else if (t >= S.phEnd) startRound(ents, t);
     } else if (S.ph === 'p') {
       if (n < 2) toLobby(t, ents);
       else {
         // Quien llega a mitad de ronda sale de la sala de espera directo a la estación
-        for (const e of ents) if (inLobby(e.x, e.z) && lateOk(e.id, t)) teleportEntity(e, pick(SPAWNS), t);
-        if (!ents.some((e) => e.id === S.it)) { S.it = pick(ents).id; S.immune = ''; hostEvent(1, S.it, ''); }
-        if (t >= S.phEnd) {
-          const loser = S.it;
-          S.lost.set(loser, (S.lost.get(loser) || 0) + 1);
-          S.los = loser; S.it = '';
-          clearRoundStuff();
-          setPhase('o', CFG.overTime, t);
-          hostEvent(5, loser);
-        } else {
-          hostGameplay(ents, t);
+        for (const e of ents) if (inLobby(e.x, e.z) && lateOk(e.id, t)) {
+          teleportEntity(e, pick(SPAWNS), t);
+          if (S.md === 'eq' && !S.tm.has(e.id)) { balanceTeams(ents); if (S.tm.get(e.id) === S.ht) S.hz.add(e.id); }
         }
+        const ids = new Set(ents.map((e) => e.id));
+        for (const id of [...S.hz]) if (!ids.has(id)) S.hz.delete(id);
+        for (const id of [...S.fz.keys()]) if (!ids.has(id)) S.fz.delete(id);
+        const free = ents.filter((e) => !S.hz.has(e.id) && !S.fz.get(e.id));
+        if (!S.hz.size) {
+          // se fue quien cazaba: otro toma su lugar
+          if (S.md === 'eq') { endRound(ents, t, 'time'); return; }
+          const nh = pick(free.length ? free : ents).id;
+          S.hz.add(nh); if (S.md === 'cl') S.it = nh;
+          hostEvent(1, nh, '');
+        } else if (t >= S.phEnd) endRound(ents, t, 'time');
+        else if (S.md !== 'cl' && !free.length) endRound(ents, t, 'all');
+        else hostGameplay(ents, t);
       }
     } else if (S.ph === 'o') {
       if (t >= S.phEnd) { if (n >= 2) setPhase('c', CFG.countdown, t); else toLobby(t, ents); }
@@ -1717,7 +1909,6 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   function toLobby(t, ents) {
     clearRoundStuff();
-    S.it = ''; S.immune = ''; S.immuneEnd = 0;
     setPhase('w', 0, t);
     (ents || hostEntities()).forEach((e, i) => { lateTp.set(e.id, t); teleportEntity(e, LOBBY_SPAWNS[i % LOBBY_SPAWNS.length], t); });
   }
@@ -1727,60 +1918,84 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     if (!iAmHost || !S) return;
     const t = nowMs(), ents = hostEntities(), n = ents.length;
     if (kind === 'start') { if (S.ph === 'w' && n >= 2) { setPhase('c', CFG.countdown, t); SND.beep(660); } return; }
-    if (kind === 'bots') {
-      if (S.ph !== 'w') return;
-      const k = clamp(arg | 0, 0, 3);
-      while (S.bots.length > k) S.bots.pop();
-      while (S.bots.length < k) S.bots.push(newBot(S.bots.length));
-      session.bots = k;
+    if (S.ph === 'w') {
+      if (kind === 'bots') {
+        const k = clamp(arg | 0, 0, 3);
+        while (S.bots.length > k) S.bots.pop();
+        while (S.bots.length < k) S.bots.push(newBot(S.bots.length));
+        session.bots = k;
+      } else if (kind === 'len') { S.roundMs = arg; session.roundMs = arg; }
+      else if (kind === 'mode') { S.md = arg; S.pts.clear(); S.ts = [0, 0]; S.tm.clear(); S.r = 0; }
+      else if (kind === 'diff') { S.df = clamp(arg | 0, 0, 2); }
       return;
     }
-    if (kind === 'len') { if (S.ph !== 'w') return; S.roundMs = arg; session.roundMs = arg; return; }
     if (S.ph !== 'o') return;
     if (kind === 'end') {
       S.ph = 'e'; S.phEnd = t + (session.multi ? 1800 : 0);
       hostEvent(8, '');
       return;
     }
-    if (kind === 'reset') { S.lost.clear(); S.r = 0; S.los = ''; hostEvent(7, ''); toLobby(t, ents); return; }
+    if (kind === 'reset') { S.pts.clear(); S.ts = [0, 0]; S.tm.clear(); S.r = 0; S.los = ''; S.win = []; hostEvent(7, ''); toLobby(t, ents); return; }
     if (n >= 2) setPhase('c', CFG.countdown, t); else toLobby(t, ents);
   }
 
   function hostGameplay(ents, t) {
     S.fx = S.fx.filter((f) => f.end > t);
-    const itE = ents.find((e) => e.id === S.it);
+    const near = (a, b, d) => Math.hypot(a.x - b.x, a.z - b.z) < d && Math.abs(a.y - b.y) < 1.6;
+    const immune = (id) => (S.imm.get(id) || 0) > t;
 
-    // Toques
-    if (itE && t >= S.nextTag) {
+    // Toques: cada cazador puede tocar a quien huye (con un pequeño descanso entre toques)
+    for (const h of ents) {
+      if (!S.hz.has(h.id) || S.fz.get(h.id) || (S.tagCd.get(h.id) || 0) > t) continue;
       for (const e of ents) {
-        if (e.id === S.it) continue;
-        if (e.id === S.immune && t < S.immuneEnd) continue;
-        if (Math.hypot(e.x - itE.x, e.z - itE.z) < CFG.tagDist && Math.abs(e.y - itE.y) < 1.6) {
-          S.nextTag = t + CFG.tagCooldown;
-          const sh = S.sh.get(e.id) || 0;
-          if (sh > 0) {
-            S.sh.set(e.id, sh - 1);
-            hostEvent(2, e.id, S.it);
-          } else {
-            const prev = S.it;
-            S.it = e.id; S.immune = prev; S.immuneEnd = t + CFG.immunity; S.lastTagTime = t;
-            S.fx = S.fx.filter((f) => !(f.id === e.id && PU[f.k].aud === 'run'));
-            hostEvent(1, e.id, prev);
-          }
+        if (S.hz.has(e.id) || S.fz.get(e.id) || immune(e.id)) continue;
+        if (!near(h, e, CFG.tagDist)) continue;
+        S.tagCd.set(h.id, t + CFG.tagCooldown);
+        S.lastTagTime = t;
+        const sh = S.sh.get(e.id) || 0;
+        if (sh > 0) { S.sh.set(e.id, sh - 1); S.imm.set(e.id, t + 1200); hostEvent(2, e.id, h.id); break; }
+        if (S.md === 'cl') {
+          S.hz.delete(h.id); S.hz.add(e.id); S.it = e.id;
+          S.imm.set(h.id, t + CFG.immunity); S.tagCd.set(e.id, t + 700);
+          hostEvent(1, e.id, h.id);
+        } else if (S.md === 'in') {
+          S.hz.add(e.id); S.tagCd.set(e.id, t + 1500); addPts(h.id, 1);
+          const left = ents.filter((x) => !S.hz.has(x.id));
+          if (left.length === 1) S.lastFree = left[0].id;
+          if (!left.length) S.lastFree = e.id;
+          hostEvent(9, e.id, h.id);
+        } else if (S.md === 'co') {
+          S.fz.set(e.id, 1); addPts(h.id, 1);
+          hostEvent(10, e.id, h.id);
+        } else if (S.md === 'eq') {
+          S.fz.set(e.id, 2); addPts(h.id, 1); S.ts[S.ht] += 1;
+          hostEvent(11, e.id, h.id);
+        }
+        break;
+      }
+    }
+    // Congelados: un compañero libre descongela al tocar
+    if (S.md === 'co') {
+      for (const r of ents) {
+        if (S.hz.has(r.id) || S.fz.get(r.id)) continue;
+        for (const f of ents) {
+          if (S.fz.get(f.id) !== 1 || !near(r, f, 1.5)) continue;
+          S.fz.delete(f.id); S.imm.set(f.id, t + 2000); addPts(r.id, 2);
+          hostEvent(12, f.id, r.id);
           break;
         }
       }
     }
 
-    // Recolección de orbes
+    // Recolección de orbes (los congelados no recogen)
     for (let i = S.orbs.length - 1; i >= 0; i--) {
       const o = S.orbs[i];
       for (const e of ents) {
-        // Cualquiera puede coger cualquier orbe. Radio generoso y, en multijugador, también vale el aviso del cliente.
+        if (S.fz.get(e.id)) continue;
         const dh = Math.hypot(e.x - o.x, e.z - o.z);
-        const near = dh <= 1.6 && e.y >= o.y - 1.0 && e.y <= o.y + 2.4;
+        const ok = dh <= 1.6 && e.y >= o.y - 1.0 && e.y <= o.y + 2.4;
         const claimed = Array.isArray(e.pk) && num(e.pk[0]) === o.id && dh < 4.5;
-        if (!near && !claimed) continue;
+        if (!ok && !claimed) continue;
         grantPowerUp(e, o.k, t);
         S.orbs.splice(i, 1);
         hostEvent(3, e.id, o.k);
@@ -1806,19 +2021,21 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 
     // Director de juego (IA): si la partida se estanca, altera el mapa.
     for (let i = 0; i < 4; i++) if (S.mutUntil[i] && t >= S.mutUntil[i]) { S.mu &= ~(1 << i); S.mutUntil[i] = 0; }
-    if (itE && t >= S.nextDir) {
+    if (t >= S.nextDir) {
       S.nextDir = t + 5000;
-      const runners = ents.filter((e) => e.id !== S.it);
-      const avg = runners.reduce((a, e) => a + Math.hypot(e.x - itE.x, e.z - itE.z), 0) / Math.max(1, runners.length);
-      const quiet = clamp((t - S.lastTagTime) / 28000, 0, 1);
-      const stagnation = 0.6 * quiet + 0.4 * clamp(avg / 30, 0, 1);
-      if (stagnation >= 0.6) {
-        const cand = [0, 1, 2, 3].filter((i) => !(S.mu & (1 << i)) && t >= S.mutCd[i]);
-        if (cand.length) {
-          const i = pick(cand);
-          S.mu |= 1 << i; S.mutUntil[i] = t + MUTS[i].dur; S.mutCd[i] = t + MUTS[i].cd;
-          S.lastTagTime = t;
-          hostEvent(4, String(i));
+      const hs = ents.filter((e) => S.hz.has(e.id)), runners = ents.filter((e) => !S.hz.has(e.id) && !S.fz.get(e.id));
+      if (hs.length && runners.length) {
+        const avg = runners.reduce((a, e) => a + Math.min(...hs.map((h) => Math.hypot(e.x - h.x, e.z - h.z))), 0) / runners.length;
+        const quiet = clamp((t - S.lastTagTime) / 28000, 0, 1);
+        const stagnation = 0.6 * quiet + 0.4 * clamp(avg / 30, 0, 1);
+        if (stagnation >= 0.6) {
+          const cand = [0, 1, 2, 3].filter((i) => !(S.mu & (1 << i)) && t >= S.mutCd[i]);
+          if (cand.length) {
+            const i = pick(cand);
+            S.mu |= 1 << i; S.mutUntil[i] = t + MUTS[i].dur; S.mutCd[i] = t + MUTS[i].cd;
+            S.lastTagTime = t;
+            hostEvent(4, String(i));
+          }
         }
       }
     }
@@ -1880,9 +2097,23 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const s = b.body;
     let tx = null, tz = null;
     const playing = S.ph === 'p';
-    const itE = ents.find((e) => e.id === S.it);
+    const D = DIFFS[S.df] || DIFFS[1];
     const mods = modsFor(b.id, t);
-    mods.speed *= 0.9;                                 // un poco más lentos que una persona
+    mods.speed *= D.speed;
+    const frozen = playing && S.fz.get(b.id);
+    const hunter = playing && S.hz.has(b.id) && !frozen;
+    const immune = (id) => (S.imm.get(id) || 0) > t;
+    // velocidad estimada de cada entidad (para que los bots difíciles anticipen)
+    if (!S.vel) S.vel = new Map();
+    for (const e of ents) {
+      const v = S.vel.get(e.id);
+      if (v && dt > 0) { v.vx = lerp(v.vx, (e.x - v.x) / dt, 0.2); v.vz = lerp(v.vz, (e.z - v.z) / dt, 0.2); v.x = e.x; v.z = e.z; }
+      else S.vel.set(e.id, { x: e.x, z: e.z, vx: 0, vz: 0 });
+    }
+    if (frozen) {
+      stepBody(s, 0, 0, dt, mods, t);    // congelado: no se mueve
+      return;
+    }
     if (!playing) {
       // Sala de espera o entre rondas: pasean tranquilos
       if (!b.wd || t > b.wdAt || Math.hypot(b.wd.x - s.x, b.wd.z - s.z) < 1) {
@@ -1892,47 +2123,68 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       }
       tx = b.wd.x; tz = b.wd.z;
       mods.speed *= 0.5;
-    } else if (b.id === S.it) {
-      let best = null, bd = 1e9;
-      for (const e of ents) {
-        if (e.id === b.id || (e.id === S.immune && t < S.immuneEnd)) continue;
-        const d = Math.hypot(e.x - s.x, e.z - s.z) + Math.abs(e.y - s.y) * 3;
-        if (d < bd) { bd = d; best = e; }
-      }
-      if (best) {
-        tx = best.x; tz = best.z;
-        if (best.y - s.y > 0.8 && s.grounded && bd < 5 && Math.random() < 0.06) tryJump(s, mods, t);
-        if (bd < 7 && areaAt(s.x, s.z) === areaAt(best.x, best.z) && mods.dash > 0 && t > b.nextDash) { tryDash(s, mods); b.nextDash = t + 1500; }
-      }
-    } else if (itE && (b.fleeing = b.fleeing ? Math.hypot(itE.x - s.x, itE.z - s.z) < 22 : Math.hypot(itE.x - s.x, itE.z - s.z) < 15)) {
-      // Huir hacia la sala más alejada de quien la lleva (sin pasar por su lado); cambia de idea con calma
-      const score = (c) => Math.hypot(c.x - itE.x, c.z - itE.z) - 0.7 * Math.hypot(c.x - s.x, c.z - s.z);
-      if (!b.fl || t > b.flAt) {
-        b.flAt = t + 3500;
-        let best = null, sc = -1e9;
-        for (const c of SPAWNS) { const v = score(c); if (v > sc) { sc = v; best = c; } }
-        if (!b.fl || sc > score(b.fl) + 5 || Math.hypot(b.fl.x - s.x, b.fl.z - s.z) < 3) b.fl = best;
-      }
-      tx = b.fl.x; tz = b.fl.z;
-      if (Math.hypot(itE.x - s.x, itE.z - s.z) < 4 && mods.dash > 0 && t > b.nextDash) { tryDash(s, mods); b.nextDash = t + 1500; }
-    } else {
-      let best = null, bd = 1e9;
-      if (!b.skip) b.skip = new Map();
-      for (const o of S.orbs) {
-        if ((b.skip.get(o.id) || 0) > t) continue;
-        const d = Math.hypot(o.x - s.x, o.z - s.z) + Math.abs(o.y - s.y) * 4;
-        if (d < bd) { bd = d; best = o; }
-      }
-      if (best && bd < 34) {
-        if (b.orbId !== best.id) { b.orbId = best.id; b.orbUntil = t + 9000; }
-        else if (t > b.orbUntil) { b.skip.set(best.id, t + 20000); b.orbId = null; }   // si no llega, lo deja para otro
-        tx = best.x; tz = best.z;
-        if (best.y - s.y > 0.4 && s.grounded && Math.hypot(best.x - s.x, best.z - s.z) < 3 && Math.random() < 0.08) tryJump(s, mods, t);
-      } else {
-        if (!b.wd || t > b.wdAt || Math.hypot(b.wd.x - s.x, b.wd.z - s.z) < 1.5) {
-          b.wdAt = t + 6000; const c = pick(SPAWNS); b.wd = { x: c.x, z: c.z };
+    } else if (hunter) {
+      // Cazar: elegir presa cada cierto tiempo (más a menudo cuanto más difícil)
+      if (!b.prey || t > b.preyAt || !ents.some((e) => e.id === b.prey)) {
+        b.preyAt = t + D.react + Math.random() * 300;
+        let best = null, bd = 1e9;
+        for (const e of ents) {
+          if (e.id === b.id || S.hz.has(e.id) || S.fz.get(e.id) || immune(e.id)) continue;
+          const d = Math.hypot(e.x - s.x, e.z - s.z) + Math.abs(e.y - s.y) * 3;
+          if (d < bd) { bd = d; best = e; }
         }
-        tx = b.wd.x; tz = b.wd.z;
+        b.prey = best ? best.id : null;
+      }
+      const prey = ents.find((e) => e.id === b.prey);
+      if (prey) {
+        const v = S.vel.get(prey.id) || { vx: 0, vz: 0 };
+        const d = Math.hypot(prey.x - s.x, prey.z - s.z);
+        const lead = D.predict * Math.min(1.2, d / 8);
+        tx = prey.x + v.vx * lead; tz = prey.z + v.vz * lead;
+        if (prey.y - s.y > 0.8 && s.grounded && d < 5 && Math.random() < 0.08 * D.jump) tryJump(s, mods, t);
+        if (d < 7 && areaAt(s.x, s.z) === areaAt(prey.x, prey.z) && mods.dash > 0 && t > b.nextDash && Math.random() < D.dash) { tryDash(s, mods); b.nextDash = t + 1500; }
+        if (t > b.nextDash && Math.random() >= D.dash) b.nextDash = t + 1500;
+      }
+    } else {
+      // Huir del cazador más cercano
+      let th = null, td = 1e9;
+      for (const e of ents) if (S.hz.has(e.id) && !S.fz.get(e.id)) { const d = Math.hypot(e.x - s.x, e.z - s.z); if (d < td) { td = d; th = e; } }
+      b.fleeing = th && (b.fleeing ? td < 22 : td < 15);
+      const rescue = S.md === 'co' ? ents.filter((e) => S.fz.get(e.id) === 1) : [];
+      if (b.fleeing) {
+        const score = (c) => Math.hypot(c.x - th.x, c.z - th.z) - 0.7 * Math.hypot(c.x - s.x, c.z - s.z);
+        if (!b.fl || t > b.flAt || Math.hypot(b.fl.x - s.x, b.fl.z - s.z) < 2.5) {
+          b.flAt = t + 3500;
+          let best = null, sc = -1e9;
+          for (const c of SPAWNS) { if (Math.hypot(c.x - s.x, c.z - s.z) < 3) continue; const v = score(c); if (v > sc) { sc = v; best = c; } }
+          if (!b.fl || sc > score(b.fl) + 5 || Math.hypot(b.fl.x - s.x, b.fl.z - s.z) < 2.5) b.fl = best;
+        }
+        tx = b.fl.x; tz = b.fl.z;
+        if (td < 4 && mods.dash > 0 && t > b.nextDash && Math.random() < D.dash) { tryDash(s, mods); b.nextDash = t + 1500; }
+      } else if (rescue.length) {
+        // Congelados: ir a descongelar al compañero más cercano
+        let best = null, bd = 1e9;
+        for (const e of rescue) { const d = Math.hypot(e.x - s.x, e.z - s.z); if (d < bd) { bd = d; best = e; } }
+        tx = best.x; tz = best.z;
+      } else {
+        let best = null, bd = 1e9;
+        if (!b.skip) b.skip = new Map();
+        for (const o of S.orbs) {
+          if ((b.skip.get(o.id) || 0) > t) continue;
+          const d = Math.hypot(o.x - s.x, o.z - s.z) + Math.abs(o.y - s.y) * 4;
+          if (d < bd) { bd = d; best = o; }
+        }
+        if (best && bd < 34) {
+          if (b.orbId !== best.id) { b.orbId = best.id; b.orbUntil = t + 9000; }
+          else if (t > b.orbUntil) { b.skip.set(best.id, t + 20000); b.orbId = null; }   // si no llega, lo deja para otro
+          tx = best.x; tz = best.z;
+          if (best.y - s.y > 0.4 && s.grounded && Math.hypot(best.x - s.x, best.z - s.z) < 3 && Math.random() < 0.08) tryJump(s, mods, t);
+        } else {
+          if (!b.wd || t > b.wdAt || Math.hypot(b.wd.x - s.x, b.wd.z - s.z) < 1.5) {
+            b.wdAt = t + 6000; const c = pick(SPAWNS); b.wd = { x: c.x, z: c.z };
+          }
+          tx = b.wd.x; tz = b.wd.z;
+        }
       }
     }
     let wx = 0, wz = 0;
@@ -1949,7 +2201,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     if (wl > 0.1 && s.grounded && hs < 1.2) {
       b.stuck += dt;
       if (b.stuck > 0.3) { tryJump(s, mods, t); b.stuck = 0; b.wx += (Math.random() - 0.5) * 1.5; b.wz += (Math.random() - 0.5) * 1.5; }
-    } else b.stuck = 0;
+      if (b.stuck === 0) { b.stuckN = (b.stuckN || 0) + 1; if (b.stuckN > 4) { b.stuckN = 0; b.wd = null; b.fl = null; b.flAt = 0; b.wdAt = 0; } }
+    } else { b.stuck = 0; if (hs > 2) b.stuckN = 0; }
     if (!s.grounded && s.vy < -1 && s.jumps < 1 + mods.jumps && Math.random() < 0.02) tryJump(s, mods, t);
     stepBody(s, b.wx, b.wz, dt, mods, t);
     ventCheck(s, t, false);
@@ -1983,9 +2236,25 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     return out;
   }
   function shieldOf(id) { if (!G || !Array.isArray(G.sh)) return 0; const e = G.sh.find((x) => x[0] === id); return e ? num(e[1]) : 0; }
+  // Estado de la ronda visto por todos: cazadores, congelados, equipos y puntos
+  const GX = { hz: new Set(), fz: new Map(), tm: new Map(), pt: new Map(), wn: new Set() };
+  function cacheG(g) {
+    GX.hz = new Set(Array.isArray(g.hz) ? g.hz.map(String) : (g.it ? [g.it] : []));
+    GX.fz = new Map(Array.isArray(g.fz) ? g.fz.map((e) => [String(e[0]), num(e[1])]) : []);
+    GX.tm = new Map(Array.isArray(g.tm) ? g.tm.map((e) => [String(e[0]), num(e[1]) ? 1 : 0]) : []);
+    GX.pt = new Map(Array.isArray(g.pt) ? g.pt.map((e) => [String(e[0]), num(e[1])]) : []);
+    GX.wn = new Set(Array.isArray(g.wn) ? g.wn.map(String) : []);
+  }
+  const gMode = () => (G && MODES.some((m) => m.id === G.md) ? G.md : 'cl');
+  const isHunter = (id) => !!G && G.ph === 'p' && GX.hz.has(id);
+  const frozenOf = (id) => (G && G.ph === 'p' ? GX.fz.get(id) || 0 : 0);
+  const teamOf = (id) => (G && gMode() === 'eq' && GX.tm.has(id) ? GX.tm.get(id) : -1);
   function modsFor(id, t) {
     const m = baseMods();
-    if (G && G.it === id && G.ph === 'p') { m.speed *= CFG.itSpeed; m.agility *= CFG.itAgility; }
+    if (isHunter(id)) {
+      if (gMode() === 'cl') { m.speed *= CFG.itSpeed; m.agility *= CFG.itAgility; }
+      else { m.speed *= 1.06; m.agility *= 0.9; }
+    }
     for (const f of fxFor(id, t)) {
       const mo = PU[f.k].mods;
       if (mo.speed) m.speed *= mo.speed;
@@ -1997,6 +2266,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   function applyG(g, at) {
     G = g; Gat = at;
+    cacheG(g);
     const mask = num(g.mu) & 15;
     if (mask !== world.mask) { rebuildWorld(mask); applyMutationVisuals(mask); }
     const evs = Array.isArray(g.ev) ? g.ev : [];
@@ -2023,15 +2293,29 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 
   function onEvent(e) {
     const [, type, a, b] = e;
-    const mine = a === myId();
+    const me_ = myId(), mine = a === me_, byMe = b === me_;
     switch (type) {
-      case 1: toast(mine ? '¡Te tocaron! Ahora la llevas tú' : `${nameOf(a)} la lleva`, true); SND.tag(); break;
+      case 1: toast(mine ? '¡Te tocaron! Ahora la llevas tú' : `${nameOf(a)} la lleva`, true); SND.tag(); if (byMe) roundStats.tags++; break;
       case 2: toast(`${nameOf(a)} se salvó con su escudo`); SND.block(); break;
-      case 3: if (mine) { toast(`Evolución: ${PU[clamp(num(b) | 0, 0, PU.length - 1)].name}`); SND.pickup(1); } else SND.pickup(0.25); break;
+      case 3: if (mine) { toast(`Evolución: ${PU[clamp(num(b) | 0, 0, PU.length - 1)].name}`); SND.pickup(1, num(b)); roundStats.orbs++; } else SND.pickup(0.25, num(b)); break;
       case 4: toast(`El Director ${MUTS[clamp(num(a) | 0, 0, 3)].text}`, true); SND.whoosh(); break;
-      case 5: SND.end(); break;
+      case 5: onRoundEnd(String(b || '')); break;
       case 7: toast('Sala reiniciada: marcador en cero', true); break;
-      case 6: toast(`Ronda ${num(G && G.r)}: ${mine ? 'empiezas llevándola tú' : nameOf(a) + ' la lleva'}`, true); SND.beep(880); break;
+      case 6: {
+        roundStats = { tags: 0, orbs: 0, rescues: 0 };
+        const md = MODES.find((m) => m.id === b) || MODES[0];
+        let txt = `Ronda ${num(G && G.r)} · ${md.name}: `;
+        if (md.id === 'cl') txt += mine ? 'empiezas llevándola tú' : nameOf(a) + ' la lleva';
+        else if (md.id === 'in') txt += mine ? 'eres el primer infectado' : nameOf(a) + ' está infectado';
+        else if (md.id === 'co') txt += isHunter(me_) ? 'te toca congelar' : 'huye y descongela a tu equipo';
+        else txt += teamOf(me_) === num(G && G.ht) ? `tu equipo (${TEAM_NAMES[teamOf(me_)]}) caza` : `tu equipo (${TEAM_NAMES[Math.max(0, teamOf(me_))]}) huye`;
+        toast(txt, true); SND.beep(880);
+        break;
+      }
+      case 9: toast(mine ? '¡Te infectaron! Ahora cazas tú' : `${nameOf(b)} infectó a ${nameOf(a)}`, mine); SND.infect(); if (byMe) roundStats.tags++; break;
+      case 10: toast(mine ? '¡Te congelaron! Espera a un compañero' : `${nameOf(b)} congeló a ${nameOf(a)}`, mine); SND.freeze(); if (byMe) roundStats.tags++; break;
+      case 11: toast(mine ? '¡Te atraparon!' : `${nameOf(b)} atrapó a ${nameOf(a)}`, mine); SND.freeze(); if (byMe) roundStats.tags++; break;
+      case 12: toast(byMe ? `Descongelaste a ${nameOf(a)}` : mine ? `${nameOf(b)} te descongeló` : `${nameOf(b)} descongeló a ${nameOf(a)}`); SND.unfreeze(); if (byMe) roundStats.rescues++; break;
       default: break;
     }
   }
@@ -2065,8 +2349,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   function publish() {
     if (!room) return;
     const patch = { p: [r2(me.body.x), r2(me.body.y), r2(me.body.z), r2(me.body.ry)] };
-    const lk = look.name + '|' + look.c + '|' + look.h + '|' + look.k + '|' + (ready ? 1 : 0);
-    if (lk !== lastLookPub) { lastLookPub = lk; Object.assign(patch, { n: look.name, c: look.c, h: look.h, k: look.k, rd: ready ? 1 : 0 }); }
+    const lk = look.name + '|' + look.c + '|' + look.h + '|' + look.k + '|' + look.tr + '|' + myLevel() + '|' + (ready ? 1 : 0);
+    if (lk !== lastLookPub) { lastLookPub = lk; Object.assign(patch, { n: look.name, c: look.c, h: look.h, k: look.k, tr: look.tr, lv: myLevel(), rd: ready ? 1 : 0 }); }
     if (iAmHost && G) {
       let g = G;
       if (JSON.stringify(g).length > 3000) g = Object.assign({}, g, { ev: g.ev.slice(-3), f: g.f.slice(-8), tp: g.tp.slice(-3) });
@@ -2299,8 +2583,10 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   // ================================================================
   // Jugador local
   // ================================================================
+  let wasGround = true, fallV = 0;
   function stepMe(t, dt) {
     const mods = modsFor(myId(), t);
+    if (frozenOf(myId())) { jumpQueued = false; dashQueued = false; stepBody(me.body, 0, 0, dt, mods, t); return; }
     let ix = joyVec.x, iy = joyVec.y;
     if (keys.has('w')) iy += 1;
     if (keys.has('s')) iy -= 1;
@@ -2309,8 +2595,12 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const fx = Math.sin(camYaw), fz = Math.cos(camYaw), rx = -Math.cos(camYaw), rz = Math.sin(camYaw);
     const wx = fx * iy + rx * ix, wz = fz * iy + rz * ix;
     if (jumpQueued) { if (tryJump(me.body, mods, t)) SND.jump(); jumpQueued = false; }
-    if (dashQueued) { tryDash(me.body, mods); dashQueued = false; }
+    if (dashQueued) { if (tryDash(me.body, mods)) SND.dash(); dashQueued = false; }
+    if (!me.body.grounded) fallV = Math.min(fallV, me.body.vy);
     stepBody(me.body, wx, wz, dt, mods, t);
+    if (me.body.grounded && !wasGround && fallV < -7) SND.land(clamp(-fallV / 20, 0.3, 1));
+    if (me.body.grounded) fallV = 0;
+    wasGround = me.body.grounded;
     ventCheck(me.body, t, true);
   }
 
@@ -2319,24 +2609,38 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   // ================================================================
   let lastHud = '', lastRoster = '', lastEvos = '', lastCountSec = -1, lastPhase = '', lastResSig = '';
   function renderResults(rem) {
-    const ids = entityIds(), lost = new Map(G && Array.isArray(G.l) ? G.l : []);
-    const los = G.los;
-    const sig = ids.join(',') + '|' + JSON.stringify(G.l) + '|' + los + '|' + iAmHost + '|' + G.r;
+    const ids = entityIds(), md = gMode(), me_ = myId(), wr = String(G.wr || '');
+    const sig = ids.join(',') + '|' + JSON.stringify(G.pt) + '|' + wr + '|' + iAmHost + '|' + G.r + '|' + (lastXpGain ? lastXpGain.at : 0);
     if (sig !== lastResSig) {
       lastResSig = sig;
-      $('#resRound').textContent = `Ronda ${num(G.r)} terminada`;
-      $('#resSub').textContent = !los ? 'Nadie se quedó con la lleva' : los === myId() ? 'Te quedaste con la lleva: pierdes esta ronda' : `${nameOf(los)} se quedó con la lleva`;
-      const sorted = ids.slice().sort((a, b) => (lost.get(a) || 0) - (lost.get(b) || 0));
-      const worst = Math.max(0, ...sorted.map((id) => lost.get(id) || 0));
+      const won = GX.wn.has(me_), reason = wr.split(':')[1] || 'time';
+      $('#resRound').textContent = `Ronda ${num(G.r)} · ${(MODES.find((m) => m.id === md) || MODES[0]).name}`;
+      $('#resTitle').textContent = won ? '¡Ganaste la ronda!' : 'Fin de la ronda';
+      let sub = '';
+      if (md === 'cl') sub = !G.los ? 'Nadie se quedó con la lleva' : G.los === me_ ? 'Te quedaste con la lleva: pierdes esta ronda' : `${nameOf(G.los)} se quedó con la lleva`;
+      else if (md === 'in') sub = reason === 'all' ? 'La infección alcanzó a todos' : 'Se acabó el tiempo: ganan los que siguen sanos';
+      else if (md === 'co') sub = reason === 'all' ? 'Congelaron a todos: ganan los cazadores' : 'Aguantaron hasta el final: ganan los que huían';
+      else { const ts = Array.isArray(G.ts) ? G.ts : [0, 0]; sub = `${reason === 'all' ? 'El equipo cazador atrapó a todos' : 'El equipo que huía aguantó'} · ${TEAM_NAMES[0]} ${ts[0]} - ${ts[1]} ${TEAM_NAMES[1]}`; }
+      $('#resSub').textContent = sub;
+      const sorted = ids.slice().sort((a, b) => (GX.pt.get(b) || 0) - (GX.pt.get(a) || 0));
       const ol = $('#resTable'); ol.textContent = '';
       for (const id of sorted) {
-        const n = lost.get(id) || 0;
-        const li = document.createElement('li'); if (n && n === worst) li.className = 'worst';
+        const li = document.createElement('li'); if (GX.wn.has(id)) li.className = 'win';
         const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colorOf(id);
-        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(id) + (id === myId() ? ' (tú)' : '');
-        const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = n ? `perdió ${n} ${n === 1 ? 'vez' : 'veces'}` : 'invicto';
+        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = (GX.wn.has(id) ? '★ ' : '') + nameOf(id) + (id === me_ ? ' (tú)' : '');
+        const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = `${GX.pt.get(id) || 0} pts`;
         li.append(dot, nm, sc); ol.appendChild(li);
       }
+      const xp = $('#resXp');
+      if (lastXpGain && nowMs() - lastXpGain.at < 60000) {
+        const L = levelOf(prog.xp);
+        xp.innerHTML = '';
+        const head = document.createElement('div'); head.className = 'xp-head';
+        head.textContent = `+${lastXpGain.gain} XP · Nivel ${L.lv}${lastXpGain.after > lastXpGain.before ? ' ¡subiste!' : ''}`;
+        const det = document.createElement('div'); det.className = 'xp-det'; det.textContent = lastXpGain.parts.map((p) => `${p[0]} +${p[1]}`).join(' · ');
+        const bar = document.createElement('div'); bar.className = 'lv-bar'; const fill = document.createElement('i'); fill.style.width = Math.round((100 * L.rest) / L.need) + '%'; bar.appendChild(fill);
+        xp.append(head, det, bar); xp.hidden = false;
+      } else xp.hidden = true;
       $('#resHost').hidden = !iAmHost;
       $('#resGuest').hidden = iAmHost;
       $('#resWait').textContent = `Esperando a que ${String(G.hn || 'el anfitrión').slice(0, 12)} elija…`;
@@ -2370,8 +2674,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   }
   function colorOf(id) {
     if (id === myId()) return COLORS[look.c];
-    if (G && Array.isArray(G.b)) { const b = G.b.find((a) => a[0] === id); if (b) return COLORS[clamp(num(b[5]) | 0, 0, 7)]; }
-    if (room) { const p = room.peers().find((q) => q.peer === id); if (p) return COLORS[clamp(num(p.presence.c) | 0, 0, 7)]; }
+    if (G && Array.isArray(G.b)) { const b = G.b.find((a) => a[0] === id); if (b) return COLORS[clamp(num(b[5]) | 0, 0, COLORS.length - 1)]; }
+    if (room) { const p = room.peers().find((q) => q.peer === id); if (p) return COLORS[clamp(num(p.presence.c) | 0, 0, COLORS.length - 1)]; }
     return COLORS[0];
   }
   function updateHud(t) {
@@ -2379,13 +2683,21 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const it = G ? G.it : '';
     const ids = entityIds();
     let timer = '--:--', status = '', isIt = false;
+    const md = gMode(), me_ = myId();
     if (!G) status = session.multi ? 'Conectando con la sala…' : 'Preparando…';
     else if (ph === 'w') { timer = ''; status = `Sala de espera · ${ids.length} ${ids.length === 1 ? 'jugador' : 'jugadores'}`; }
     else if (ph === 'c') { timer = String(Math.max(1, Math.ceil(rem / 1000))); status = '¡Prepárate!'; }
     else if (ph === 'p') {
       timer = fmtTime(rem);
-      isIt = it === myId();
-      status = isIt ? '¡TÚ LA LLEVAS! Toca a alguien' : `Huye de ${nameOf(it)}`;
+      isIt = isHunter(me_);
+      const freeN = ids.filter((id) => !GX.hz.has(id) && !GX.fz.get(id)).length;
+      if (md === 'cl') status = isIt ? '¡TÚ LA LLEVAS! Toca a alguien' : `Huye de ${nameOf(it)}`;
+      else if (md === 'in') status = isIt ? `Infectado: atrapa a los que quedan (${freeN})` : `Huye de los infectados · quedan ${freeN} sanos`;
+      else if (md === 'co') status = frozenOf(me_) ? '¡Congelado! Espera a que un compañero te toque' : isIt ? `Congela a todos · ${freeN} libres` : `Huye y descongela a tu equipo · ${freeN} libres`;
+      else {
+        const tmI = teamOf(me_), ts = Array.isArray(G.ts) ? G.ts : [0, 0];
+        status = frozenOf(me_) ? `Te atraparon · ${TEAM_NAMES[0]} ${ts[0]} - ${ts[1]} ${TEAM_NAMES[1]}` : `Equipo ${TEAM_NAMES[Math.max(0, tmI)]} · ${isIt ? 'cazas' : 'huyes'} · ${TEAM_NAMES[0]} ${ts[0]} - ${ts[1]} ${TEAM_NAMES[1]}`;
+      }
     } else if (ph === 'o') { timer = '0:00'; status = 'Fin de la ronda'; }
     const urgent = ph === 'p' && rem < 30000;
     const sig = timer + '|' + status + '|' + isIt + '|' + urgent;
@@ -2413,20 +2725,22 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const rn = ai >= 0 && !inWait ? AREAS[ai].name : '';
     const rnEl = $('#roomName'); if (rnEl.textContent !== rn) rnEl.textContent = rn;
 
-    // Lista de jugadores
-    const lost = new Map(G && Array.isArray(G.l) ? G.l : []);
-    const rs = ids.map((id) => id + ':' + nameOf(id) + ':' + (id === it) + ':' + shieldOf(id) + ':' + (lost.get(id) || 0) + ':' + colorOf(id)).join('|');
+    // Lista de jugadores (ordenada por puntos)
+    const rs = ids.map((id) => id + ':' + nameOf(id) + ':' + isHunter(id) + ':' + frozenOf(id) + ':' + teamOf(id) + ':' + shieldOf(id) + ':' + (GX.pt.get(id) || 0) + ':' + colorOf(id)).join('|');
     if (rs !== lastRoster) {
       lastRoster = rs;
       const ol = $('#roster'); ol.textContent = '';
-      for (const id of ids) {
+      const huntTag = { cl: 'LA LLEVA', in: 'INFECTADO', co: 'CAZA', eq: 'CAZA' }[md];
+      for (const id of ids.slice().sort((a, b) => (GX.pt.get(b) || 0) - (GX.pt.get(a) || 0))) {
         const li = document.createElement('li');
-        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = colorOf(id); li.appendChild(dot);
-        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(id) + (id === myId() ? ' (tú)' : ''); li.appendChild(nm);
-        if (id === it) { const b = document.createElement('span'); b.className = 'badge it'; b.textContent = 'LA LLEVA'; li.appendChild(b); }
+        const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = teamOf(id) >= 0 ? TEAM_COLORS[teamOf(id)] : colorOf(id); li.appendChild(dot);
+        const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = nameOf(id) + (id === me_ ? ' (tú)' : ''); li.appendChild(nm);
+        if (isHunter(id)) { const b = document.createElement('span'); b.className = 'badge it'; b.textContent = huntTag; li.appendChild(b); }
+        const fz = frozenOf(id);
+        if (fz) { const b = document.createElement('span'); b.className = 'badge ice'; b.textContent = fz === 2 ? 'ATRAPADO' : 'CONGELADO'; li.appendChild(b); }
         if (shieldOf(id) > 0) { const b = document.createElement('span'); b.className = 'badge sh'; b.textContent = 'ESCUDO'; li.appendChild(b); }
-        const l = lost.get(id) || 0;
-        if (l) { const s = document.createElement('span'); s.className = 'lost'; s.textContent = `perdió ${l}`; li.appendChild(s); }
+        const pts = GX.pt.get(id) || 0;
+        if (pts) { const s2 = document.createElement('span'); s2.className = 'lost'; s2.textContent = `${pts} pts`; li.appendChild(s2); }
         ol.appendChild(li);
       }
     }
@@ -2466,21 +2780,20 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   function audioTick(t) {
     if (!SND.ctx) return;
     const ph = G ? G.ph : '';
+    SND.setStyle(mode !== 'game' ? 'menu' : ph === 'p' ? (remaining(t) < 30000 ? 'tense' : 'game') : ph === 'c' ? 'game' : ph === 'e' ? 'off' : 'lobby');
     if (ph !== 'p') { SND.setHum(0); return; }
-    const it = G.it, rem = remaining(t);
+    const rem = remaining(t), me_ = myId();
     let tension = 1 - clamp(rem / 60000, 0, 1);
-    if (it === myId()) { tension = Math.max(tension, 0.25); SND.setHum(0.03); }
+    if (isHunter(me_)) { tension = Math.max(tension, 0.25); SND.setHum(0.03); }
     else {
-      const av = avatars.get(it === myId() ? '__me' : it);
-      if (av) {
-        const d = Math.hypot(av.dx - me.body.x, av.dz - me.body.z);
-        const prox = clamp(1 - d / 22, 0, 1);
-        SND.setHum(prox * prox * 0.22);
-        tension = Math.max(tension, prox * 0.9);
-      }
+      let d = 1e9;
+      for (const id of GX.hz) { const av = avatars.get(id === me_ ? '__me' : id); if (av) d = Math.min(d, Math.hypot(av.dx - me.body.x, av.dz - me.body.z)); }
+      const prox = clamp(1 - d / 22, 0, 1);
+      SND.setHum(prox * prox * 0.22);
+      tension = Math.max(tension, prox * 0.9);
     }
     if (tension > 0.08 && t >= SND.nextBeat) {
-      SND.thump(0.4 + tension * 0.6);
+      SND.thump(0.3 + tension * 0.5);
       SND.nextBeat = t + lerp(1050, 380, tension);
     }
   }
@@ -2491,9 +2804,11 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   function renderWorld(t, dt) {
     const seen = new Set(['__me']);
     const meAv = ensureAvatar('__me', look);
-    const myIt = !!(G && G.ph === 'p' && G.it === myId());
+    const flags = (id, extra) => Object.assign({ it: isHunter(id), frozen: frozenOf(id), team: teamOf(id), cheer: !!(G && G.ph === 'o' && GX.wn.has(id)),
+      evo: fxFor(id, t).length, shield: shieldOf(id) }, extra);
+    const me_ = myId();
     updateAvatar(meAv, me.body.x, me.body.y, me.body.z, me.body.ry,
-      { it: myIt, cheer: !!(G && G.ph === 'o' && G.los !== myId()), evo: fxFor(myId(), t).length, shield: shieldOf(myId()), name: bubbleFor(myId()) || look.name, mine: true, smooth: 60 }, t, dt);
+      flags(me_, { tr: look.tr, name: bubbleFor(me_) || look.name, mine: true, smooth: 60 }), t, dt);
     const fp = mode === 'game' && viewMode === 'fp';
     meAv.root.visible = !fp; meAv.shadow.visible = !fp; if (fp) meAv.trail.visible = false;
 
@@ -2502,18 +2817,18 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
         if (p.isMe && p.sameTab) continue;
         const pr = p.presence, a = pr.p;
         if (!Array.isArray(a)) continue;
-        const lk = { c: clamp(num(pr.c) | 0, 0, 7), h: clamp(num(pr.h) | 0, 0, HATS.length - 1), k: clamp(num(pr.k) | 0, 0, CAPES.length - 1) };
+        const lk = { c: clamp(num(pr.c) | 0, 0, COLORS.length - 1), h: clamp(num(pr.h) | 0, 0, HATS.length - 1), k: clamp(num(pr.k) | 0, 0, CAPES.length - 1) };
         const av = ensureAvatar(p.peer, lk); seen.add(p.peer);
         updateAvatar(av, num(a[0]), num(a[1]), num(a[2]), num(a[3]),
-          { it: !!(G && G.ph === 'p' && G.it === p.peer), cheer: !!(G && G.ph === 'o' && G.los !== p.peer), evo: fxFor(p.peer, t).length, shield: shieldOf(p.peer), name: bubbleFor(p.peer) || nameOf(p.peer), mine: false }, t, dt);
+          flags(p.peer, { tr: clamp(num(pr.tr) | 0, 0, TRAILS.length - 1), name: bubbleFor(p.peer) || nameOf(p.peer), mine: false }), t, dt);
       }
       if (G && Array.isArray(G.b)) {
         for (const b of G.b) {
           const id = String(b[0]);
-          const av = ensureAvatar(id, { c: clamp(num(b[5]) | 0, 0, 7), h: clamp(num(b[6]) | 0, 0, HATS.length - 1), k: clamp(num(b[7]) | 0, 0, CAPES.length - 1) });
+          const av = ensureAvatar(id, { c: clamp(num(b[5]) | 0, 0, COLORS.length - 1), h: clamp(num(b[6]) | 0, 0, HATS.length - 1), k: clamp(num(b[7]) | 0, 0, CAPES.length - 1) });
           seen.add(id);
           updateAvatar(av, num(b[1]), num(b[2]), num(b[3]), num(b[4]),
-            { it: G.ph === 'p' && G.it === id, cheer: G.ph === 'o' && G.los !== id, evo: fxFor(id, t).length, shield: shieldOf(id), name: nameOf(id), mine: false, smooth: iAmHost ? 40 : 14 }, t, dt);
+            flags(id, { tr: clamp(num(b[9]) | 0, 0, TRAILS.length - 1), name: nameOf(id), mine: false, smooth: iAmHost ? 40 : 14 }), t, dt);
         }
       }
       syncOrbs(G && Array.isArray(G.o) ? G.o : [], t);
@@ -2729,18 +3044,19 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 
     // Otros jugadores y bots (en el borde si están fuera de rango)
     const itId = G && G.ph === 'p' ? G.it : '';
+    const isH = (id) => isHunter(id === '__me' ? myId() : id);
     for (const [id, av] of avatars) {
       if (id === '__me') continue;
       let [u, v] = P(av.dx, av.dz);
       const ox = u - R, oy = v - R, d = Math.hypot(ox, oy), lim = R - 7;
       const edge = d > lim;
       if (edge) { u = R + ox / d * lim; v = R + oy / d * lim; }
-      const isIt = id === itId;
+      const isIt = isH(id), fzm = frozenOf(id), tmm = teamOf(id);
       if (isIt) {
         c.strokeStyle = 'rgba(255,61,154,0.9)'; c.lineWidth = 2;
         c.beginPath(); c.arc(u, v, 7.5 + Math.sin(t * 0.01) * 1.5, 0, Math.PI * 2); c.stroke();
       }
-      c.fillStyle = isIt ? '#ff3d9a' : colorOf(id);
+      c.fillStyle = fzm ? '#bff4ff' : isIt ? '#ff3d9a' : tmm >= 0 ? TEAM_COLORS[tmm] : colorOf(id);
       c.strokeStyle = 'rgba(0,0,0,0.7)'; c.lineWidth = 1.5;
       c.globalAlpha = edge ? 0.75 : 1;
       c.beginPath(); c.arc(u, v, isIt ? 5 : 3.8, 0, Math.PI * 2); c.fill(); c.stroke();
@@ -2758,7 +3074,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const sx = Math.sin(me.body.ry), sz = Math.cos(me.body.ry);
     const ang = Math.atan2(sx * rx + sz * rz, sx * fx + sz * fz);
     c.translate(R, R); c.rotate(ang);
-    c.fillStyle = itId && itId === myId() ? '#ff3d9a' : COLORS[look.c];
+    c.fillStyle = isHunter(myId()) ? '#ff3d9a' : teamOf(myId()) >= 0 ? TEAM_COLORS[teamOf(myId())] : COLORS[look.c];
     c.strokeStyle = '#0b0a1a'; c.lineWidth = 1.5;
     c.beginPath(); c.moveTo(0, -8); c.lineTo(5.5, 6); c.lineTo(0, 3); c.lineTo(-5.5, 6); c.closePath(); c.fill(); c.stroke();
     c.restore();
@@ -2774,34 +3090,47 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   function refreshLook() { for (const f of lookRefreshers) f(); }
   function buildLook(root) {
     root.textContent = '';
+    root.appendChild(levelCard());
     const field = (label) => {
       const f = document.createElement('div'); f.className = 'field';
       const l = document.createElement('span'); l.className = 'lbl'; l.textContent = label;
       f.appendChild(l); root.appendChild(f); return f;
     };
+    const locked = (key, i) => { if (isUnlocked(key, i)) return false; toast(`Se desbloquea en el nivel ${unlockLv(key, i)}`); SND.beep(300); return true; };
     const sw = document.createElement('div'); sw.className = 'swatches'; field('Color').appendChild(sw);
     COLORS.forEach((c, i) => {
       const b = document.createElement('button');
-      b.type = 'button'; b.className = 'swatch'; b.style.background = c; b.style.color = c;
-      b.setAttribute('aria-label', 'Color ' + (i + 1));
-      b.addEventListener('click', () => { look.c = i; saveLook(); refreshLook(); });
+      b.type = 'button'; b.className = 'swatch' + (i === RAINBOW ? ' rainbow' : ''); b.style.background = i === RAINBOW ? '' : c; b.style.color = c;
+      b.dataset.i = i;
+      b.addEventListener('click', () => { if (locked('c', i)) return; look.c = i; saveLook(); refreshLook(); });
       sw.appendChild(b);
     });
-    const group = (label, names, key) => {
+    const group = (label, names, key, lockKey) => {
       const box = document.createElement('div'); box.className = 'chips'; field(label).appendChild(box);
       names.forEach((nm, i) => {
-        const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = nm;
-        b.addEventListener('click', () => { look[key] = i; saveLook(); refreshLook(); });
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.nm = nm;
+        b.addEventListener('click', () => { if (lockKey && locked(lockKey, i)) return; look[key] = i; saveLook(); refreshLook(); });
         box.appendChild(b);
       });
       return box;
     };
-    const hats = group('Cabeza', HATS, 'h');
-    const capes = group('Espalda', CAPES, 'k');
+    const hats = group('Cabeza', HATS, 'h', 'h');
+    const capes = group('Espalda', CAPES, 'k', null);
+    const trails = group('Estela', TRAILS, 'tr', 'tr');
     const refresh = () => {
-      [...sw.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === look.c)));
-      [...hats.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === look.h)));
-      [...capes.children].forEach((x, j) => x.setAttribute('aria-pressed', String(j === look.k)));
+      [...sw.children].forEach((x, j) => {
+        const lk = !isUnlocked('c', j);
+        x.setAttribute('aria-pressed', String(j === look.c)); x.classList.toggle('locked', lk);
+        x.setAttribute('aria-label', (j === RAINBOW ? 'Color arcoíris' : 'Color ' + (j + 1)) + (lk ? `, bloqueado hasta el nivel ${unlockLv('c', j)}` : ''));
+        x.title = lk ? `Nivel ${unlockLv('c', j)}` : '';
+      });
+      const lab = (box, key, cur) => [...box.children].forEach((x, j) => {
+        const lk = key && !isUnlocked(key, j);
+        x.textContent = lk ? `${x.dataset.nm} · Nv ${unlockLv(key, j)}` : x.dataset.nm;
+        x.classList.toggle('locked', !!lk); x.setAttribute('aria-pressed', String(j === cur));
+      });
+      lab(hats, 'h', look.h); lab(capes, null, look.k); lab(trails, 'tr', look.tr);
+      renderLevel();
     };
     lookRefreshers.push(refresh);
     refresh();
@@ -2822,7 +3151,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     const guests = rows.filter((r) => !r.host && !r.bot), readyN = guests.filter((r) => r.rd).length;
     const botsN = S ? S.bots.length : (G && Array.isArray(G.b) ? G.b.length : 0);
     const len = S ? S.roundMs : num(G && G.rm, 180000);
-    const sig = JSON.stringify(rows) + '|' + iAmHost + '|' + botsN + '|' + len + '|' + lpCollapsed;
+    const md = S ? S.md : gMode(), df = S ? S.df : clamp(num(G && G.df, 1) | 0, 0, 2);
+    const sig = JSON.stringify(rows) + '|' + iAmHost + '|' + botsN + '|' + len + '|' + lpCollapsed + '|' + md + '|' + df + '|' + myLevel();
     if (sig === lastLp) return;
     lastLp = sig;
     $('#lpTitle').textContent = session.multi ? `Sala ${session.sala.toUpperCase()}` : 'Práctica con bots';
@@ -2837,12 +3167,21 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       else if (r.bot) { tag.className = 'tag bot'; tag.textContent = 'Bot'; }
       else if (r.rd) { tag.className = 'tag ok'; tag.textContent = 'Listo'; }
       else { tag.className = 'tag wait'; tag.textContent = 'Esperando'; }
-      li.append(dot, nm, tag);
+      const lvS = document.createElement('span'); lvS.className = 'lvtag';
+      const p = peers.get(r.id), lvN = r.id === myId() ? myLevel() : p && p.presence ? num(p.presence.lv) : 0;
+      lvS.textContent = r.bot ? '' : lvN ? 'Nv ' + lvN : '';
+      li.append(dot, nm, lvS, tag);
       ol.appendChild(li);
     }
     $('#lpHost').hidden = !iAmHost;
     [...$('#lpBots').children].forEach((c, j) => c.setAttribute('aria-pressed', String(j === botsN)));
     [...$('#lpLen').children].forEach((c, j) => c.setAttribute('aria-pressed', String(LENS[j] === len)));
+    [...$('#lpMode').children].forEach((c, j) => c.setAttribute('aria-pressed', String(MODES[j].id === md)));
+    [...$('#lpDiff').children].forEach((c, j) => c.setAttribute('aria-pressed', String(j === df)));
+    const mInfo = MODES.find((m) => m.id === md) || MODES[0];
+    $('#lpModeInfo').innerHTML = '';
+    const mb = document.createElement('b'); mb.textContent = mInfo.name + ': ';
+    $('#lpModeInfo').append(mb, mInfo.desc + (botsN ? ` · Bots en ${DIFFS[df].name.toLowerCase()}` : ''));
     const start = $('#lpStart');
     start.hidden = !iAmHost;
     start.disabled = rows.length < 2;
@@ -2862,6 +3201,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   const LENS = [120000, 180000, 300000];
   chips($('#lpBots'), ['0', '1', '2', '3'], () => (S ? S.bots.length : opts.bots), (i) => { opts.bots = i; save('tagverse.opts', opts); hostAction('bots', i); lastLp = ''; });
   chips($('#lpLen'), ['2 min', '3 min', '5 min'], () => LENS.indexOf(S ? S.roundMs : opts.len), (i) => { opts.len = LENS[i]; save('tagverse.opts', opts); hostAction('len', LENS[i]); lastLp = ''; });
+  chips($('#lpMode'), MODES.map((m) => m.name), () => MODES.findIndex((m) => m.id === (S ? S.md : opts.mode)), (i) => { opts.mode = MODES[i].id; save('tagverse.opts', opts); hostAction('mode', MODES[i].id); lastLp = ''; });
+  chips($('#lpDiff'), DIFFS.map((d) => d.name), () => (S ? S.df : opts.diff), (i) => { opts.diff = i; save('tagverse.opts', opts); hostAction('diff', i); lastLp = ''; });
   $('#lpStart').addEventListener('click', () => { hostAction('start'); grabKeyboard(); });
   $('#lpReady').addEventListener('click', () => { ready = !ready; lastLp = ''; grabKeyboard(); });
   $('#lpInvite').addEventListener('click', openShare);
@@ -2869,7 +3210,6 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
   $('#lpLook').addEventListener('click', () => { $('#lookPanel').hidden = false; });
   $('#lookClose').addEventListener('click', () => { $('#lookPanel').hidden = true; grabKeyboard(); });
   $('#lookPanel').addEventListener('click', (e) => { if (e.target.id === 'lookPanel') { $('#lookPanel').hidden = true; grabKeyboard(); } });
-  buildLook($('#lookGame'));
 
   // Recoger orbes: en multijugador el cliente avisa al anfitrión de que tocó uno
   let lastClaim = -1;
@@ -2887,6 +3227,139 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       }
     }
   }
+
+  // ================================================================
+  // Progresión: experiencia, niveles y desbloqueos (se guarda en este dispositivo)
+  // ================================================================
+  const prog = Object.assign({ xp: 0 }, load('tagverse.prog') || {});
+  prog.xp = Math.max(0, num(prog.xp));
+  let roundStats = { tags: 0, orbs: 0, rescues: 0 }, lastXpGain = null;
+  const myLevel = () => levelOf(prog.xp).lv;
+  const unlockLv = (key, i) => (UNLOCK[key] && UNLOCK[key][i]) || 1;
+  const isUnlocked = (key, i) => myLevel() >= unlockLv(key, i);
+  // Si el look guardado tiene algo bloqueado (por ejemplo en otro dispositivo), volver a lo básico
+  if (!isUnlocked('c', look.c)) look.c = 0;
+  if (!isUnlocked('h', look.h)) look.h = 0;
+  if (!isUnlocked('tr', look.tr)) look.tr = 0;
+
+  function unlocksAt(lv) {
+    const out = [];
+    for (const [i, l] of Object.entries(UNLOCK.c)) if (l === lv) out.push(Number(i) === RAINBOW ? 'el color Arcoíris' : 'un color nuevo');
+    for (const [i, l] of Object.entries(UNLOCK.h)) if (l === lv) out.push('el gorro ' + HATS[i]);
+    for (const [i, l] of Object.entries(UNLOCK.tr)) if (l === lv) out.push('la estela ' + TRAILS[i]);
+    return out;
+  }
+  function nextUnlockText() {
+    const lv = myLevel();
+    for (let l = lv + 1; l < 100; l++) { const u = unlocksAt(l); if (u.length) return `Nivel ${l}: ${u.join(', ')}`; }
+    return '¡Lo tienes todo desbloqueado!';
+  }
+  function onRoundEnd() {
+    const id = myId(), won = GX.wn.has(id);
+    SND.end(); if (won) SND.win(); else SND.lose();
+    const parts = [['Ronda jugada', 10]];
+    if (won) parts.push(['Victoria', 20]);
+    if (roundStats.tags) parts.push([`Toques (${roundStats.tags})`, 5 * roundStats.tags]);
+    if (roundStats.rescues) parts.push([`Rescates (${roundStats.rescues})`, 6 * roundStats.rescues]);
+    if (roundStats.orbs) parts.push([`Orbes (${roundStats.orbs})`, 3 * roundStats.orbs]);
+    const gain = parts.reduce((a, p) => a + p[1], 0);
+    const before = myLevel();
+    prog.xp += gain; save('tagverse.prog', prog);
+    const after = myLevel();
+    lastXpGain = { gain, parts, before, after, won, at: nowMs() };
+    roundStats = { tags: 0, orbs: 0, rescues: 0 };
+    if (after > before) {
+      const news = [];
+      for (let l = before + 1; l <= after; l++) news.push(...unlocksAt(l));
+      setTimeout(() => { toast(`¡Subiste a nivel ${after}!${news.length ? ' Desbloqueaste ' + news.join(', ') : ''}`, true); SND.levelUp(); }, 1400);
+      refreshLook();
+    }
+    renderLevel();
+  }
+  function levelCard() {
+    const el = document.createElement('div'); el.className = 'lvl-card';
+    el.innerHTML = '<div class="lv-top"><b class="lv-num"></b><span class="lv-xp"></span></div><div class="lv-bar"><i></i></div><div class="lv-next"></div>';
+    return el;
+  }
+  function renderLevel() {
+    const L = levelOf(prog.xp);
+    for (const el of document.querySelectorAll('.lvl-card')) {
+      el.querySelector('.lv-num').textContent = 'Nivel ' + L.lv;
+      el.querySelector('.lv-xp').textContent = `${L.rest} / ${L.need} XP`;
+      el.querySelector('.lv-bar i').style.width = Math.round((100 * L.rest) / L.need) + '%';
+      el.querySelector('.lv-next').textContent = 'Próximo: ' + nextUnlockText();
+    }
+  }
+
+  // ---------------- Gorros nuevos (se arman con figuras sobre la cabeza del personaje) ----------------
+  // top: altura de la coronilla en el espacio de la cabeza; r: radio de la cabeza
+  function addExtraHat(parent, h, top, r, color, mats) {
+    if (!parent || h < 7) return null;
+    const s = r / 0.3, g = new T.Group(); parent.add(g);
+    const M = (opt) => { const m = new T.MeshStandardMaterial(Object.assign({ roughness: 0.5 }, opt)); mats.push(m); return m; };
+    const mesh = (geo, mat, x, y, z) => { const o = new T.Mesh(geo, mat); o.position.set(x * s, y, z * s); g.add(o); return o; };
+    let spin = null;
+    if (h === 7) {   // Orejas de gato
+      const outer = M({ color, emissive: color, emissiveIntensity: 0.15 }), inner = M({ color: 0xffb3d1 });
+      for (const sd of [-1, 1]) {
+        const e = mesh(new T.ConeGeometry(0.1 * s, 0.24 * s, 12), outer, 0.17 * sd, top - 0.05 * s, -0.02); e.rotation.z = -0.4 * sd;
+        const i = mesh(new T.ConeGeometry(0.055 * s, 0.15 * s, 10), inner, 0.165 * sd, top - 0.06 * s, 0.035); i.rotation.z = -0.4 * sd;
+      }
+    } else if (h === 8) {   // Sombrero de copa
+      const black = M({ color: 0x17141f, roughness: 0.4 }), band = M({ color, emissive: color, emissiveIntensity: 0.3 });
+      mesh(new T.CylinderGeometry(0.27 * s, 0.27 * s, 0.03 * s, 24), black, 0, top - 0.03 * s, 0);
+      mesh(new T.CylinderGeometry(0.17 * s, 0.18 * s, 0.32 * s, 24), black, 0, top + 0.14 * s, 0);
+      mesh(new T.CylinderGeometry(0.183 * s, 0.183 * s, 0.06 * s, 24), band, 0, top + 0.02 * s, 0);
+    } else if (h === 9) {   // Casco vikingo
+      const metal = M({ color: 0x9aa0b0, metalness: 0.3, roughness: 0.35 }), horn = M({ color: 0xf3ead6, roughness: 0.6 });
+      mesh(new T.SphereGeometry(r * 1.06, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), metal, 0, top - r, 0);
+      mesh(new T.TorusGeometry(r * 1.04, 0.025 * s, 6, 28), M({ color: 0x6b4a2a }), 0, top - r + 0.01, 0).rotation.x = Math.PI / 2;
+      for (const sd of [-1, 1]) { const c = mesh(new T.ConeGeometry(0.07 * s, 0.32 * s, 12), horn, 0.3 * sd, top - 0.1 * s, 0); c.rotation.z = -1.05 * sd; }
+    } else if (h === 10) {   // Gorra con hélice
+      const capA = M({ color, emissive: color, emissiveIntensity: 0.1 }), capB = M({ color: 0xffd23d });
+      const cap = mesh(new T.SphereGeometry(r * 1.05, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), capA, 0, top - r, 0);
+      cap.scale.y = 0.75;
+      mesh(new T.CylinderGeometry(0.015 * s, 0.015 * s, 0.12 * s, 6), capB, 0, top + 0.03 * s, 0);
+      spin = new T.Group(); spin.position.y = top + 0.1 * s; g.add(spin);
+      const red = M({ color: 0xff3d5a }), yel = M({ color: 0x35e0ff });
+      const b1 = new T.Mesh(new T.BoxGeometry(0.34 * s, 0.015 * s, 0.07 * s), red); b1.position.x = 0.17 * s; spin.add(b1);
+      const b2 = new T.Mesh(new T.BoxGeometry(0.34 * s, 0.015 * s, 0.07 * s), yel); b2.position.x = -0.17 * s; spin.add(b2);
+    }
+    return { group: g, spin };
+  }
+
+  // Ajustes visuales que comparten los dos tipos de personaje: congelado, equipo, arcoíris y gorros nuevos
+  const ICE_MAT = new T.MeshStandardMaterial({ color: 0xbff4ff, emissive: 0x3aa8c8, emissiveIntensity: 0.5, transparent: true, opacity: 0.42, roughness: 0.1, depthWrite: false });
+  const ICE_GEO = (() => { const g = new T.IcosahedronGeometry(0.62, 1); g.scale(1, 1.55, 1); g.translate(0, 0.95, 0); return g; })();
+  const TEAM_RING_GEO = new T.RingGeometry(0.55, 0.78, 36);
+  const TEAM_MATS = TEAM_COLORS.map((c) => new T.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.85, side: T.DoubleSide, depthWrite: false }));
+  const RB = new T.Color();
+  function avatarExtras(av, o, t, dt) {
+    // Congelado / atrapado: bloque de hielo
+    if (o.frozen && !av.ice) { av.ice = new T.Mesh(ICE_GEO, ICE_MAT); av.model.add(av.ice); }
+    if (av.ice) { av.ice.visible = !!o.frozen; if (o.frozen) av.ice.rotation.y += dt * 0.3; }
+    // Equipo: aro de color en los pies
+    if (o.team >= 0 && !av.teamRing) { av.teamRing = new T.Mesh(TEAM_RING_GEO, TEAM_MATS[0]); av.teamRing.rotation.x = -Math.PI / 2; av.teamRing.position.y = 0.04; av.root.add(av.teamRing); }
+    if (av.teamRing) { av.teamRing.visible = o.team >= 0; if (o.team >= 0) av.teamRing.material = TEAM_MATS[o.team]; }
+    // Color arcoíris
+    if (av.rainbow && !o.it && !o.frozen) {
+      RB.setHSL((t * 0.00012 + av.phase * 0.1) % 1, 0.85, 0.6);
+      av.bodyMat.color.copy(RB); av.bodyMat.emissive.copy(RB); av.trimMat.color.copy(RB);
+      if (av.trimMat.emissive) av.trimMat.emissive.copy(RB);
+    }
+    if (o.frozen) { av.bodyMat.emissive.setHex(0x3aa8c8); av.bodyMat.emissiveIntensity = 0.5; }
+    if (av.hat && av.hat.spin) av.hat.spin.rotation.y += dt * (8 + av.speed * 2);
+  }
+  // Estelas especiales
+  function trailColor(style, i, n, base, t) {
+    const u = i / Math.max(1, n - 1);
+    if (style === 1) return RB.setRGB(1, 0.85 - 0.6 * u, 0.25 - 0.2 * u);          // fuego
+    if (style === 2) return RB.setRGB(0.75 - 0.4 * u, 0.95, 1);                     // hielo
+    if (style === 3) return RB.setRGB(1, 0.8 - 0.15 * u, 0.25);                      // oro
+    if (style === 4) return RB.setHSL((u * 0.8 + t * 0.0004) % 1, 0.9, 0.6);        // arcoíris
+    return base;
+  }
+  buildLook($('#lookGame'));
 
   // ================================================================
   // Bucle principal
@@ -2913,8 +3386,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       if (session.multi) { pollChat(); claimOrbs(); }
       if (session.multi) { pubAcc += dt; if (pubAcc >= 0.066) { pubAcc = 0; publish(); } }
       updateHud(t);
-      audioTick(t);
     }
+    audioTick(t);
     renderWorld(t, dt);
     stationTick(t, dt);
     if (mode === 'game' && G && G.ph !== 'w') drawMinimap(t);
@@ -2947,6 +3420,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
     $('#tabPlayBtn').addEventListener('click', () => setTab('play'));
     $('#tabLookBtn').addEventListener('click', () => setTab('look'));
     $('#btnView').addEventListener('click', () => { setView(viewMode === 'fp' ? 'tp' : 'fp'); grabKeyboard(); });
+    const syncMusic = () => { const b = $('#btnMusic'); b.textContent = SND.musicOn ? 'Música: sí' : 'Música: no'; b.setAttribute('aria-pressed', String(!SND.musicOn)); };
+    $('#btnMusic').addEventListener('click', () => { SND.init(); SND.setMusicOn(!SND.musicOn); syncMusic(); grabKeyboard(); });
+    syncMusic();
     const inName = $('#inName');
     inName.value = look.name;
     inName.addEventListener('input', () => {
@@ -2995,7 +3471,7 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
       const count = room.peers().filter((p) => p.presence && p.presence.v === 1 && p.presence.s === s).length + (Array.isArray(g.b) ? g.b.length : 0);
       const b = document.createElement('button'); b.type = 'button'; b.className = 'room-btn';
       const left = document.createElement('span'); left.className = 'rleft';
-      const dot = document.createElement('i'); dot.className = 'rdot'; dot.style.background = COLORS[clamp(num(h.presence.c) | 0, 0, 7)]; dot.style.color = COLORS[clamp(num(h.presence.c) | 0, 0, 7)];
+      const dot = document.createElement('i'); dot.className = 'rdot'; dot.style.background = COLORS[clamp(num(h.presence.c) | 0, 0, COLORS.length - 1)]; dot.style.color = COLORS[clamp(num(h.presence.c) | 0, 0, COLORS.length - 1)];
       const txt = document.createElement('span');
       const st = document.createElement('strong'); st.textContent = `Sala de ${String(h.presence.n || 'alguien').slice(0, 12)}`;
       const sm = document.createElement('small'); sm.textContent = `${count} ${count === 1 ? 'jugador' : 'jugadores'} · ${PH[g.ph] || 'abierta'} · código ${String(s).toUpperCase()}`;

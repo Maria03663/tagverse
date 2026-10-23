@@ -22,6 +22,14 @@ Se juega en el navegador, en PC o en el celular, sin instalar nada.
 
 ## Qué tiene
 
+- **4 modos de juego** (los elige el anfitrión en la sala de espera):
+  - *Clásico*: quien la lleva cuando acaba el tiempo pierde.
+  - *Infección*: a quien tocan también caza; ganan los que sobreviven.
+  - *Equipos*: Rojo contra Azul, un equipo caza y el otro huye; cada ronda cambian.
+  - *Congelados*: tocar congela y un compañero libre te descongela.
+- **Niveles y desbloqueos**: ganas experiencia por jugar, ganar, tocar, rescatar y recoger orbes. Subiendo de nivel se desbloquean colores (incluido Arcoíris), gorros (Orejas, Copa, Vikingo, Hélice) y estelas (Fuego, Hielo, Oro, Arcoíris).
+- **Bots con dificultad** fácil, normal o difícil.
+- **Música generada** que cambia en la sala de espera, la partida y los últimos 30 segundos, y efectos de sonido para cada acción.
 - **Estación Órbita**: 9 salas (Comedor, Puente de mando, Reactor, Motores, Laboratorio, Oxígeno, Seguridad, Almacén, Comunicaciones) unidas por pasillos, con cajas y plataformas para saltar.
 - **Mutación de quien la lleva**: es más rápido pero gira peor.
 - **Orbes de evolución**: Velocidad, Doble salto, Dash, Escudo, Teletransporte y Furia.
